@@ -1,0 +1,12 @@
+{
+  "name": "@ntl/config",
+  "version": "0.0.1",
+  "private": true,
+  "files": ["eslint/node.cjs", "prettier.json", "ts/tsconfig.base.json"],
+  "exports": {
+    "./eslint/node": "./eslint/node.cjs",
+    "./prettier": "./prettier.json",
+    "./tsconfig": "./ts/tsconfig.base.json"
+  }
+}
+

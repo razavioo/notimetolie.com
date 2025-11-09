@@ -1,0 +1,78 @@
+name: Database Migrations
+
+on:
+  push:
+    paths:
+      - 'apps/api/alembic/versions/**'
+      - 'apps/api/src/models.py'
+    branches: [ main, develop ]
+
+jobs:
+  run-migrations:
+    name: Run Database Migrations
+    runs-on: ubuntu-latest
+    environment: ${{ github.ref == 'refs/heads/main' && 'production' || 'staging' }}
+
+    steps:
+    - name: Checkout repository
+      uses: actions/checkout@v4
+
+    - name: Set up Python
+      uses: actions/setup-python@v4
+      with:
+        python-version: '3.14'
+
+    - name: Install dependencies
+      working-directory: ./apps/api
+      run: |
+        python -m pip install --upgrade pip
+        pip install -r requirements.txt
+
+    - name: Run database upgrade
+      working-directory: ./apps/api
+      env:
+        DATABASE_URL: ${{ secrets.DATABASE_URL }}
+      run: |
+        alembic upgrade head
+
+    - name: Create migration backup
+      working-directory: ./apps/api
+      if: github.ref == 'refs/heads/main'
+      run: |
+        alembic current > migration_backup.txt
+        echo "Migration backup created"
+
+  create-migration:
+    name: Create Migration if Needed
+    runs-on: ubuntu-latest
+    if: github.event_name == 'push' && contains(github.event.commits[0].message, '[migration]')
+
+    steps:
+    - name: Checkout repository
+      uses: actions/checkout@v4
+
+    - name: Set up Python
+      uses: actions/setup-python@v4
+      with:
+        python-version: '3.14'
+
+    - name: Install dependencies
+      working-directory: ./apps/api
+      run: |
+        python -m pip install --upgrade pip
+        pip install -r requirements.txt
+
+    - name: Auto-generate migration
+      working-directory: ./apps/api
+      env:
+        DATABASE_URL: ${{ secrets.DATABASE_URL }}
+      run: |
+        alembic revision --autogenerate -m "Auto-generated migration"
+
+    - name: Commit migration
+      run: |
+        git config --local user.email "action@github.com"
+        git config --local user.name "GitHub Action"
+        git add apps/api/alembic/versions/
+        git diff --staged --quiet || git commit -m "Auto-generated database migration [skip ci]"
+        git push

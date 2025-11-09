@@ -1,0 +1,45 @@
+{
+  "name": "notimetolie",
+  "version": "0.1.0",
+  "private": true,
+  "workspaces": [
+    "apps/*",
+    "packages/*"
+  ],
+  "scripts": {
+    "dev:api": "uvicorn apps.api.src.main:app --reload --host 0.0.0.0 --port 8000",
+    "dev:web": "next dev apps/web",
+    "build": "npm run build --workspaces",
+    "dev": "npm run dev --workspaces",
+    "lint": "eslint .",
+    "format": "prettier --write .",
+    "test": "npm run test --workspaces",
+    "clean": "npm run clean --workspaces",
+    "docker:build": "docker-compose build",
+    "docker:up": "docker-compose up -d",
+    "docker:down": "docker-compose down"
+  },
+  "devDependencies": {
+    "@types/node": "^22.0.0",
+    "typescript": "^5.7.0",
+    "prettier": "^3.0.0",
+    "eslint": "^8.0.0",
+    "husky": "^8.0.0",
+    "lint-staged": "^15.0.0"
+  },
+  "husky": {
+    "hooks": {
+      "pre-commit": "lint-staged"
+    }
+  },
+  "lint-staged": {
+    "*.{js,jsx,ts,tsx}": [
+      "eslint --fix",
+      "prettier --write"
+    ],
+    "*.{json,md,yml,yaml}": [
+      "prettier --write"
+    ]
+  }
+}
+

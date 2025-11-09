@@ -1,0 +1,97 @@
+version: '3.8'
+
+services:
+  # PostgreSQL Database
+  postgres:
+    image: postgres:18
+    environment:
+      POSTGRES_DB: notimetolie_test
+      POSTGRES_USER: test_user
+      POSTGRES_PASSWORD: test_password
+    ports:
+      - "5433:5432"
+    volumes:
+      - postgres_test_data:/var/lib/postgresql/data
+
+  # Redis Cache
+  redis:
+    image: redis:8-alpine
+    ports:
+      - "6380:6379"
+    volumes:
+      - redis_test_data:/data
+
+  # Meilisearch
+  meilisearch:
+    image: getmeili/meilisearch:v1.9
+    environment:
+      MEILI_MASTER_KEY: testMasterKey123
+      MEILI_ENV: development
+    ports:
+      - "7701:7700"
+    volumes:
+      - meilisearch_test_data:/meili_data
+
+  # MinIO Object Storage
+  minio:
+    image: minio/minio:latest
+    command: server /data --console-address ":9001"
+    environment:
+      MINIO_ROOT_USER: testminioadmin
+      MINIO_ROOT_PASSWORD: testminioadmin123
+    ports:
+      - "9002:9000"
+      - "9003:9001"
+    volumes:
+      - minio_test_data:/data
+
+  # FastAPI Backend (Test)
+  api:
+    build:
+      context: ./apps/api
+      dockerfile: Dockerfile
+    ports:
+      - "8001:8000"
+    environment:
+      - DATABASE_URL=postgresql+asyncpg://test_user:test_password@postgres:5432/notimetolie_test
+      - REDIS_URL=redis://redis:6379
+      - MEILISEARCH_URL=http://meilisearch:7700
+      - MEILISEARCH_MASTER_KEY=testMasterKey123
+      - MINIO_ENDPOINT=minio:9000
+      - MINIO_ACCESS_KEY=testminioadmin
+      - MINIO_SECRET_KEY=testminioadmin123
+      - MINIO_BUCKET_NAME=notimetolie_test
+      - SECRET_KEY=test-secret-key
+      - DEBUG=true
+      - TESTING=true
+    depends_on:
+      - postgres
+      - redis
+      - meilisearch
+      - minio
+    volumes:
+      - ./apps/api:/app
+    command: uvicorn src.main:app --reload --host 0.0.0.0 --port 8000
+
+  # Next.js Frontend (Test)
+  web:
+    build:
+      context: ./apps/web
+      dockerfile: Dockerfile
+    ports:
+      - "3001:3000"
+    environment:
+      - NEXT_PUBLIC_API_URL=http://localhost:8001/v1
+      - NODE_ENV=test
+    depends_on:
+      - api
+    volumes:
+      - ./apps/web:/app
+      - /app/node_modules
+    command: npm run dev
+
+volumes:
+  postgres_test_data:
+  redis_test_data:
+  meilisearch_test_data:
+  minio_test_data:
