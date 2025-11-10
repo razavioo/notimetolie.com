@@ -146,7 +146,7 @@ A streamlined, two-step process:
 2.  A sandboxed version of the editor opens with the Block's content.
 3.  The Builder makes changes and writes a mandatory "Change Summary."
 4.  The suggestion is submitted, triggering notifications to the content owner and moderators.
-5.  Upon approval, a new Revision is created, and the original Block is updated.
+5.  Upon approval, a new Revision is created, and the original Block is updated. Moderators can approve or reject suggestions via `/v1/moderation/suggestions/{id}/approve` and `/v1/moderation/suggestions/{id}/reject`. Approved suggestions award XP to the author and update the block content.
 
 ### **5.3. Content Embedding Flow**
 Every public Path and Block will have a "Share" panel providing a simple `iframe` snippet and a more advanced JavaScript SDK for embedding. The content served is always the latest approved revision.
