@@ -118,8 +118,24 @@ def upgrade() -> None:
     )
     op.create_index(op.f('ix_user_flags_status'), 'user_flags', ['status'])
 
+    # Create path_blocks association table for ordered path composition
+    op.create_table(
+        'path_blocks',
+        sa.Column('id', postgresql.UUID(as_uuid=True), nullable=False),
+        sa.Column('path_id', postgresql.UUID(as_uuid=True), nullable=False),
+        sa.Column('block_id', postgresql.UUID(as_uuid=True), nullable=False),
+        sa.Column('position', sa.Integer(), nullable=False),
+        sa.ForeignKeyConstraint(['path_id'], ['content_nodes'], ),
+        sa.ForeignKeyConstraint(['block_id'], ['content_nodes'], ),
+        sa.PrimaryKeyConstraint('id'),
+        sa.UniqueConstraint('path_id', 'block_id', name='uq_path_block_unique')
+    )
+    op.create_index('ix_path_blocks_path_id_position', 'path_blocks', ['path_id', 'position'])
+
 
 def downgrade() -> None:
+    op.drop_index('ix_path_blocks_path_id_position', table_name='path_blocks')
+    op.drop_table('path_blocks')
     op.drop_index(op.f('ix_user_flags_status'), table_name='user_flags')
     op.drop_table('user_flags')
     op.drop_index(op.f('ix_edit_suggestions_status'), table_name='edit_suggestions')

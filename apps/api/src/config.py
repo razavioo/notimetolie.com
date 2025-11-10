@@ -1,4 +1,5 @@
 from pydantic_settings import BaseSettings
+from pydantic import Field
 from typing import List, Optional
 
 
@@ -11,8 +12,8 @@ class Settings(BaseSettings):
     api_v1_prefix: str = "/v1"
 
     # Database
-    database_url: str = "postgresql+asyncpg://user:password@localhost/notimetolie"
-    database_test_url: str = "postgresql+asyncpg://test_user:test_password@localhost/notimetolie_test"
+    database_url: str = Field("sqlite+aiosqlite:///./notimetolie.db", alias="DATABASE_URL")
+    database_test_url: str = Field("sqlite+aiosqlite:///./notimetolie_test.db", alias="DATABASE_URL_TEST")
 
     # Redis
     redis_url: str = "redis://localhost:6379"
@@ -31,7 +32,7 @@ class Settings(BaseSettings):
     refresh_token_expire_days: int = 7
 
     # CORS
-    cors_origins: List[str] = ["http://localhost:3000", "http://localhost:3001", "http://127.0.0.1:3000"]
+    cors_origins: str = Field("http://localhost:3000,http://localhost:3001,http://127.0.0.1:3000", alias="CORS_ORIGINS")
 
     # File Storage
     minio_endpoint: str = "localhost:9000"
@@ -65,6 +66,8 @@ class Settings(BaseSettings):
         env_file = ".env"
         env_file_encoding = "utf-8"
         case_sensitive = False
+        env_nested_delimiter = "__"
+        extra = "allow"
 
 
 settings = Settings()

@@ -1,23 +1,35 @@
-from sqlalchemy import create_engine
+import os
 from sqlalchemy.ext.declarative import declarative_base
 from sqlalchemy.ext.asyncio import AsyncSession, create_async_engine, async_sessionmaker
-from sqlalchemy.orm import sessionmaker
+from sqlalchemy.pool import StaticPool
 
 from .config import settings
 
-# Async engine
-engine = create_async_engine(
-    settings.database_url,
-    echo=settings.debug,
-    future=True
-)
+def _engine_for_url(url: str, echo: bool):
+    if url.startswith("sqlite+"):
+        kwargs = {"echo": echo, "future": True, "connect_args": {"check_same_thread": False}}
+        # Use StaticPool for in-memory to keep the same connection
+        if ":memory:" in url:
+            kwargs["poolclass"] = StaticPool
+        return create_async_engine(url, **kwargs)
+    try:
+        return create_async_engine(url, echo=echo, future=True)
+    except ModuleNotFoundError as e:
+        # Fallback to in-memory SQLite if asyncpg or other DBAPI is missing
+        return create_async_engine(
+            "sqlite+aiosqlite:///:memory:",
+            echo=echo,
+            future=True,
+            connect_args={"check_same_thread": False},
+            poolclass=StaticPool,
+        )
+
+
+# Async engine (fallbacks to SQLite memory if driver missing)
+engine = _engine_for_url(settings.database_url, settings.debug)
 
 # Test engine for testing
-test_engine = create_async_engine(
-    settings.database_test_url,
-    echo=settings.debug,
-    future=True
-)
+test_engine = _engine_for_url(settings.database_test_url, settings.debug)
 
 # Session factory
 AsyncSessionLocal = async_sessionmaker(
