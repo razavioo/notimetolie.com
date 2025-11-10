@@ -21,12 +21,16 @@ export default function BlocksPage() {
   const loadBlocks = async () => {
     try {
       setIsLoading(true)
-      // Note: This is a mock implementation since we don't have a list endpoint yet
-      // In a real app, you'd have a GET /blocks endpoint
-      const mockBlocks: BlockPublic[] = []
-      setBlocks(mockBlocks)
+      const response = await api.getBlocks()
+      if (response.data) {
+        setBlocks(response.data)
+      } else {
+        console.error('Failed to load blocks:', response.error)
+        setBlocks([])
+      }
     } catch (error) {
       console.error('Failed to load blocks:', error)
+      setBlocks([])
     } finally {
       setIsLoading(false)
     }
@@ -46,8 +50,12 @@ export default function BlocksPage() {
         }
       }
 
-      const newBlock = await api.createBlock(blockData)
-      setBlocks(prev => [newBlock, ...prev])
+      const newBlockResponse = await api.createBlock(blockData)
+      if (newBlockResponse.data) {
+        setBlocks(prev => [newBlockResponse.data!, ...prev])
+      } else {
+        throw new Error(newBlockResponse.error || 'Failed to create block')
+      }
       setShowForm(false)
     } catch (error) {
       console.error('Failed to create block:', error)
@@ -71,8 +79,12 @@ export default function BlocksPage() {
         }
       }
 
-      const updatedBlock = await api.updateBlock(editingBlock.id, updateData)
-      setBlocks(prev => prev.map(b => b.id === updatedBlock.id ? updatedBlock : b))
+      const updatedBlockResponse = await api.updateBlock(editingBlock.id, updateData)
+      if (updatedBlockResponse.data) {
+        setBlocks(prev => prev.map(b => b.id === updatedBlockResponse.data!.id ? updatedBlockResponse.data! : b))
+      } else {
+        throw new Error(updatedBlockResponse.error || 'Failed to update block')
+      }
       setEditingBlock(null)
     } catch (error) {
       console.error('Failed to update block:', error)
@@ -95,8 +107,8 @@ export default function BlocksPage() {
   }
 
   const handleViewBlock = (block: BlockPublic) => {
-    // In a real app, this would navigate to a block detail page
-    alert(`Viewing block: ${block.title}`)
+    // Navigate to block detail
+    window.location.href = `/blocks/${block.slug}`
   }
 
   if (isLoading) {

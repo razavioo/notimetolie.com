@@ -3,6 +3,8 @@
 import { useState, useEffect } from 'react'
 import { BlockPublic } from '@/types/api'
 
+import { useRouter } from 'next/navigation'
+
 interface BlockCardProps {
   block: BlockPublic
   onView?: (block: BlockPublic) => void
@@ -12,6 +14,30 @@ interface BlockCardProps {
 
 export function BlockCard({ block, onView, onEdit, onDelete }: BlockCardProps) {
   const [showActions, setShowActions] = useState(false)
+  const router = useRouter()
+
+  const handleViewBlock = () => {
+    if (onView) {
+      onView(block)
+    } else {
+      router.push(`/blocks/${block.slug}`)
+    }
+    setShowActions(false)
+  }
+
+  const handleEditBlock = () => {
+    if (onEdit) {
+      onEdit(block)
+    }
+    setShowActions(false)
+  }
+
+  const handleDeleteBlock = () => {
+    if (onDelete) {
+      onDelete(block.id)
+    }
+    setShowActions(false)
+  }
 
   const formatDate = (dateString: string) => {
     return new Date(dateString).toLocaleDateString('en-US', {
@@ -67,7 +93,7 @@ export function BlockCard({ block, onView, onEdit, onDelete }: BlockCardProps) {
             <div className="absolute right-0 top-full mt-1 bg-white border rounded shadow-lg z-10 min-w-[120px]">
               {onView && (
                 <button
-                  onClick={() => { onView(block); setShowActions(false); }}
+                  onClick={handleViewBlock}
                   className="block w-full text-left px-3 py-2 text-sm hover:bg-gray-100"
                 >
                   View
@@ -75,7 +101,7 @@ export function BlockCard({ block, onView, onEdit, onDelete }: BlockCardProps) {
               )}
               {onEdit && (
                 <button
-                  onClick={() => { onEdit(block); setShowActions(false); }}
+                  onClick={handleEditBlock}
                   className="block w-full text-left px-3 py-2 text-sm hover:bg-gray-100"
                 >
                   Edit
@@ -83,7 +109,7 @@ export function BlockCard({ block, onView, onEdit, onDelete }: BlockCardProps) {
               )}
               {onDelete && (
                 <button
-                  onClick={() => { onDelete(block.id); setShowActions(false); }}
+                  onClick={handleDeleteBlock}
                   className="block w-full text-left px-3 py-2 text-sm hover:bg-gray-100 text-red-600"
                 >
                   Delete

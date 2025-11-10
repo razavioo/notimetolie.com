@@ -40,6 +40,7 @@ export interface SuggestionResponse {
   change_summary: string
   status: string
   created_at: string
+  updated_at: string
   created_by_id?: string
 }
 
