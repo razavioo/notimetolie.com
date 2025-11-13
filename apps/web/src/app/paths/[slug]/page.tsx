@@ -78,19 +78,43 @@ export default function PathDetailPage() {
             </div>
           </div>
 
-          <div className="border-t pt-6 space-y-2">
+          <div className="border-t pt-6 space-y-4">
             <h3 className="text-lg font-semibold">Blocks in this path</h3>
             {path.blocks.length === 0 ? (
               <p className="text-muted-foreground">No blocks in this path yet.</p>
             ) : (
-              <ol className="space-y-2 list-decimal pl-5">
-                {path.blocks.map((block) => (
-                  <li key={block.id} className="text-sm">
-                    <span className="font-medium">{block.title}</span>
-                    <span className="text-muted-foreground ml-2">({block.block_type})</span>
-                  </li>
+              <div className="space-y-3">
+                {path.blocks.map((block, index) => (
+                  <div
+                    key={block.id}
+                    onClick={() => router.push(`/blocks/${block.slug}`)}
+                    className="border rounded-lg p-4 hover:shadow-md transition-shadow cursor-pointer bg-card"
+                  >
+                    <div className="flex items-start gap-4">
+                      <div className="flex-shrink-0 w-8 h-8 rounded-full bg-primary/10 text-primary flex items-center justify-center font-semibold">
+                        {index + 1}
+                      </div>
+                      <div className="flex-1 min-w-0">
+                        <h4 className="font-semibold text-base mb-1">{block.title}</h4>
+                        <div className="flex items-center gap-2 text-sm text-muted-foreground">
+                          <span className="px-2 py-0.5 rounded-full text-xs bg-muted">
+                            {block.block_type}
+                          </span>
+                          <code className="bg-muted px-1 rounded text-xs text-foreground/70">
+                            /{block.slug}
+                          </code>
+                        </div>
+                        {block.content && (
+                          <p className="mt-2 text-sm text-muted-foreground line-clamp-2">
+                            {typeof block.content === 'string' ? block.content.substring(0, 150) : ''}
+                            {typeof block.content === 'string' && block.content.length > 150 && '...'}
+                          </p>
+                        )}
+                      </div>
+                    </div>
+                  </div>
                 ))}
-              </ol>
+              </div>
             )}
           </div>
 
