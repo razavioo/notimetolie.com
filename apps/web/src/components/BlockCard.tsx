@@ -62,7 +62,10 @@ export function BlockCard({ block, onView, onEdit, onDelete }: BlockCardProps) {
   }
 
   return (
-    <div className="border rounded-lg p-4 hover:shadow-md transition-shadow">
+    <div 
+      className="border rounded-lg p-4 hover:shadow-md transition-shadow cursor-pointer"
+      onClick={handleViewBlock}
+    >
       <div className="flex justify-between items-start mb-2">
         <div className="flex-1">
           <h3 className="text-lg font-semibold mb-1">{block.title}</h3>
@@ -83,34 +86,46 @@ export function BlockCard({ block, onView, onEdit, onDelete }: BlockCardProps) {
 
         <div className="relative">
           <button
-            onClick={() => setShowActions(!showActions)}
-            className="p-1 hover:bg-gray-100 rounded"
+            onClick={(e) => {
+              e.stopPropagation()
+              setShowActions(!showActions)
+            }}
+            className="p-1 hover:bg-gray-100 dark:hover:bg-gray-700 rounded"
           >
             ⋮
           </button>
 
           {showActions && (
-            <div className="absolute right-0 top-full mt-1 bg-white border rounded shadow-lg z-10 min-w-[120px]">
+            <div className="absolute right-0 top-full mt-1 bg-background border rounded shadow-lg z-10 min-w-[120px]">
               {onView && (
                 <button
-                  onClick={handleViewBlock}
-                  className="block w-full text-left px-3 py-2 text-sm hover:bg-gray-100"
+                  onClick={(e) => {
+                    e.stopPropagation()
+                    handleViewBlock()
+                  }}
+                  className="block w-full text-left px-3 py-2 text-sm hover:bg-accent"
                 >
                   View
                 </button>
               )}
               {onEdit && (
                 <button
-                  onClick={handleEditBlock}
-                  className="block w-full text-left px-3 py-2 text-sm hover:bg-gray-100"
+                  onClick={(e) => {
+                    e.stopPropagation()
+                    handleEditBlock()
+                  }}
+                  className="block w-full text-left px-3 py-2 text-sm hover:bg-accent"
                 >
                   Edit
                 </button>
               )}
               {onDelete && (
                 <button
-                  onClick={handleDeleteBlock}
-                  className="block w-full text-left px-3 py-2 text-sm hover:bg-gray-100 text-red-600"
+                  onClick={(e) => {
+                    e.stopPropagation()
+                    handleDeleteBlock()
+                  }}
+                  className="block w-full text-left px-3 py-2 text-sm hover:bg-accent text-red-600"
                 >
                   Delete
                 </button>
@@ -121,8 +136,26 @@ export function BlockCard({ block, onView, onEdit, onDelete }: BlockCardProps) {
       </div>
 
       <div className="text-sm text-muted-foreground mb-2">
-        <code className="bg-gray-100 px-1 rounded">/{block.slug}</code>
+        <code className="bg-muted px-1 rounded text-foreground/80">/{block.slug}</code>
+        {block.language && (
+          <span className="ml-2 text-xs px-2 py-0.5 bg-blue-100 dark:bg-blue-900/30 text-blue-800 dark:text-blue-300 rounded">
+            {block.language.toUpperCase()}
+          </span>
+        )}
       </div>
+
+      {block.tags && block.tags.length > 0 && (
+        <div className="flex flex-wrap gap-1 mb-2">
+          {block.tags.slice(0, 3).map((tag, index) => (
+            <span key={index} className="text-xs px-2 py-0.5 bg-accent text-accent-foreground rounded">
+              {tag}
+            </span>
+          ))}
+          {block.tags.length > 3 && (
+            <span className="text-xs text-muted-foreground">+{block.tags.length - 3}</span>
+          )}
+        </div>
+      )}
 
       {block.content && (
         <div className="text-sm text-gray-600 line-clamp-3">
