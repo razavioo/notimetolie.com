@@ -1,7 +1,12 @@
-from fastapi import FastAPI
+from fastapi import FastAPI, HTTPException, Request, Response
 from fastapi.middleware.cors import CORSMiddleware
+from fastapi.responses import JSONResponse
+import logging
+from starlette.middleware.base import BaseHTTPMiddleware
+from starlette.exceptions import HTTPException as StarletteHTTPException
 
-from .routers import users_router, blocks_router, paths_router, search_router
+from .config import settings
+from .routers import users_router, blocks_router, paths_router, search_router, moderation_router, embed_router
 from .services.search import ensure_index_bootstrapped
 from .events.bus import bus
 from .events.listeners import search_index_listener, notification_listener
@@ -18,11 +23,37 @@ from .events.events import (
 )
 
 
+# Configure logging
+logging.basicConfig(level=logging.INFO)
+logger = logging.getLogger(__name__)
+
+
+# Custom error handling middleware
+class ErrorHandlerMiddleware(BaseHTTPMiddleware):
+    async def dispatch(self, request: Request, call_next):
+        try:
+            response = await call_next(request)
+            return response
+        except HTTPException as e:
+            logger.error(f"HTTP Exception: {e.status_code} - {e.detail}")
+            return JSONResponse(
+                status_code=e.status_code,
+                content={"error": e.detail, "status_code": e.status_code}
+            )
+        except Exception as e:
+            logger.error(f"Unhandled Exception: {str(e)}")
+            return JSONResponse(
+                status_code=500,
+                content={"error": "Internal server error", "status_code": 500}
+            )
+
+
 app = FastAPI(title="No Time To Lie API", version="0.1.0", description="A Living Knowledge Infrastructure API")
 
+app.add_middleware(ErrorHandlerMiddleware)
 app.add_middleware(
     CORSMiddleware,
-    allow_origins=["http://localhost:3000"],
+    allow_origins=settings.cors_origins.split(","),
     allow_credentials=True,
     allow_methods=["*"],
     allow_headers=["*"],
@@ -33,6 +64,8 @@ app.include_router(users_router, prefix="/v1", tags=["users"])
 app.include_router(blocks_router, prefix="/v1", tags=["blocks"])
 app.include_router(paths_router, prefix="/v1", tags=["paths"])
 app.include_router(search_router, prefix="/v1", tags=["search"])
+app.include_router(moderation_router, prefix="/v1", tags=["moderation"])
+app.include_router(embed_router, prefix="/v1", tags=["embed"])
 
 
 @app.get("/v1/health")
