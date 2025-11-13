@@ -5,15 +5,19 @@ import { useParams, useRouter } from 'next/navigation'
 import { BlockEditor } from '@/components/BlockEditor'
 import { SuggestionsList } from '@/components/SuggestionsList'
 import { SuggestEditModal } from '@/components/SuggestEditModal'
-import { BlockPublic } from '@/types/api'
+import { BlockPublic, PathPublic } from '@/types/api'
 import { api } from '@/lib/api'
 import { Block } from '@blocknote/core'
 import { SharePanel } from '@/components/SharePanel'
+import { RevisionHistory } from '@/components/RevisionHistory'
+import { useAuth } from '@/hooks/useAuth'
+import { ChevronDown, ChevronRight } from 'lucide-react'
 
 export default function BlockDetailPage() {
   const params = useParams()
   const router = useRouter()
   const slug = params.slug as string
+  const { hasPermission } = useAuth()
 
   const [block, setBlock] = useState<BlockPublic | null>(null)
   const [isLoading, setIsLoading] = useState(true)
@@ -23,10 +27,13 @@ export default function BlockDetailPage() {
   const [suggestionsKey, setSuggestionsKey] = useState(0)
   const [editContent, setEditContent] = useState<Block[]>([])
   const [editTitle, setEditTitle] = useState('')
+  const [pathsUsingBlock, setPathsUsingBlock] = useState<PathPublic[]>([])
+  const [isContentCollapsed, setIsContentCollapsed] = useState(false)
 
   useEffect(() => {
     if (slug) {
       loadBlock()
+      loadPathsUsingBlock()
     }
   }, [slug])
 
@@ -53,6 +60,23 @@ export default function BlockDetailPage() {
     }
   }
 
+  const loadPathsUsingBlock = async () => {
+    try {
+      const pathsResponse = await api.getPaths()
+      if (pathsResponse.data) {
+        const response = await api.getBlock(slug)
+        if (response.data) {
+          const filteredPaths = pathsResponse.data.filter(path => 
+            path.blocks?.some(b => b.id === response.data?.id)
+          )
+          setPathsUsingBlock(filteredPaths)
+        }
+      }
+    } catch (error) {
+      console.error('Failed to load paths:', error)
+    }
+  }
+
   const handleSave = async () => {
     if (!block || !editTitle.trim()) return
 
@@ -60,7 +84,7 @@ export default function BlockDetailPage() {
       setIsSubmitting(true)
       const updateData = {
         title: editTitle,
-        content: editContent?.map(block => JSON.stringify(block)).join('\n'),
+        content: editContent ? JSON.stringify(editContent) : undefined,
         metadata: {
           blocknote_content: editContent
         }
@@ -192,58 +216,120 @@ export default function BlockDetailPage() {
                   )}
                 </div>
               </div>
-              <button
-                onClick={() => setIsEditing(true)}
-                className="bg-primary text-primary-foreground px-4 py-2 rounded-md hover:bg-primary/90"
-              >
-                Edit Block
-              </button>
-              <button
-                onClick={() => setIsSuggestOpen(true)}
-                className="ml-2 border border-primary text-primary px-4 py-2 rounded-md hover:bg-primary/10"
-              >
-                Suggest an Edit
-              </button>
+              <div className="flex gap-2">
+                {hasPermission('create_blocks') && (
+                  <button
+                    onClick={() => setIsEditing(true)}
+                    className="bg-primary text-primary-foreground px-4 py-2 rounded-md hover:bg-primary/90"
+                  >
+                    Edit Block
+                  </button>
+                )}
+                {hasPermission('suggest_edits') && (
+                  <button
+                    onClick={() => setIsSuggestOpen(true)}
+                    className="border border-primary text-primary px-4 py-2 rounded-md hover:bg-primary/10"
+                  >
+                    Suggest an Edit
+                  </button>
+                )}
+              </div>
             </div>
 
             <div className="border-t pt-6">
-              {block.content && block.metadata?.blocknote_content ? (
-                <BlockEditor
-                  initialContent={block.metadata.blocknote_content}
-                  onChange={() => {}} // Read-only
-                  editable={false}
-                />
-              ) : block.content ? (
-                <div className="prose max-w-none">
-                  <p>{block.content}</p>
-                </div>
-              ) : (
-                <p className="text-muted-foreground">No content available.</p>
+              <div className="mb-4 flex items-center justify-between">
+                <button
+                  onClick={() => setIsContentCollapsed(!isContentCollapsed)}
+                  className="flex items-center gap-2 text-sm font-medium hover:text-primary transition-colors"
+                >
+                  {isContentCollapsed ? (
+                    <>
+                      <ChevronRight className="h-4 w-4" />
+                      <span>I know this... (Show content)</span>
+                    </>
+                  ) : (
+                    <>
+                      <ChevronDown className="h-4 w-4" />
+                      <span>I know this... (Hide content)</span>
+                    </>
+                  )}
+                </button>
+              </div>
+              
+              {!isContentCollapsed && (
+                <>
+                  {block.content && block.metadata?.blocknote_content ? (
+                    <BlockEditor
+                      initialContent={block.metadata.blocknote_content}
+                      onChange={() => {}} // Read-only
+                      editable={false}
+                    />
+                  ) : block.content ? (
+                    <div className="prose max-w-none">
+                      <p>{block.content}</p>
+                    </div>
+                  ) : (
+                    <p className="text-muted-foreground">No content available.</p>
+                  )}
+                </>
               )}
             </div>
 
+            {pathsUsingBlock.length > 0 && (
+              <div className="border-t pt-6">
+                <h3 className="text-lg font-semibold mb-4">Used in Paths</h3>
+                <div className="space-y-2">
+                  {pathsUsingBlock.map(path => (
+                    <div
+                      key={path.id}
+                      onClick={() => router.push(`/paths/${path.slug}`)}
+                      className="border rounded-lg p-3 hover:shadow-md transition-shadow cursor-pointer bg-card"
+                    >
+                      <div className="flex items-center justify-between">
+                        <div>
+                          <h4 className="font-medium">{path.title}</h4>
+                          <div className="flex items-center gap-2 text-sm text-muted-foreground mt-1">
+                            <span>{path.blocks?.length || 0} blocks</span>
+                            {path.is_published && (
+                              <>
+                                <span>•</span>
+                                <span className="text-green-600">✓ Published</span>
+                              </>
+                            )}
+                          </div>
+                        </div>
+                        <ChevronRight className="h-5 w-5 text-muted-foreground" />
+                      </div>
+                    </div>
+                  ))}
+                </div>
+              </div>
+            )}
+
             <div className="border-t pt-6">
-              <h3 className="text-lg font-semibold mb-4">Share</h3>
               <SharePanel nodeType="block" nodeId={block.id} slug={block.slug} />
             </div>
 
             <div className="border-t pt-6">
-              <h3 className="text-lg font-semibold mb-4">Suggestions</h3>
+              <RevisionHistory blockId={block.id} />
+            </div>
+
+            <div className="border-t pt-6">
               {block && <SuggestionsList key={suggestionsKey} blockId={block.id} />}
             </div>
             {block && (
               <SuggestEditModal
                 isOpen={isSuggestOpen}
                 onClose={() => setIsSuggestOpen(false)}
-                initialTitle={`Suggest edit: ${block.title}`}
-                initialContent={block.metadata?.blocknote_content || []}
+                initialTitle={block.title}
+                initialContent={block.metadata?.blocknote_content || (block.content ? [{ type: 'paragraph', content: block.content }] : [])}
                 isSubmitting={isSubmitting}
                 onSubmit={async ({ title, content, changeSummary }) => {
                   try {
                     setIsSubmitting(true)
                     await api.createSuggestion(block.id, {
                       title,
-                      content: content?.map(b => JSON.stringify(b)).join('\n') || undefined,
+                      content: content ? JSON.stringify(content) : undefined,
                       change_summary: changeSummary,
                     })
                     setIsSuggestOpen(false)
