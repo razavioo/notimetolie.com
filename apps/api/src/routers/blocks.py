@@ -342,6 +342,10 @@ async def create_suggestion(
 ):
     """Create a suggestion for a block"""
     try:
+        # Validate user
+        if not current_user or not current_user.id:
+            raise HTTPException(status_code=401, detail="User not authenticated")
+        
         block_uuid = uuid.UUID(block_id)
         # Check if block exists
         result = await db.execute(
@@ -371,6 +375,8 @@ async def create_suggestion(
         await db.refresh(suggestion)
 
         return suggestion
+    except HTTPException:
+        raise
     except ValueError as e:
         raise HTTPException(status_code=400, detail="Invalid block ID format")
     except Exception as e:
