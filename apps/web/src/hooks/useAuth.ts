@@ -43,10 +43,10 @@ export function useAuth() {
 
     const rolePermissions: Record<string, string[]> = {
       admin: ['*'], // All permissions
-      moderator: ['view', 'create_blocks', 'create_paths', 'suggest_edits', 'review_suggestions', 'moderate_content'],
-      trusted_builder: ['view', 'create_blocks', 'create_paths', 'suggest_edits', 'review_suggestions'],
-      builder: ['view', 'create_blocks', 'create_paths', 'suggest_edits'],
-      guest: ['view']
+      moderator: ['view', 'create_blocks', 'create_paths', 'create_suggestions', 'review_suggestions', 'moderate_content'],
+      trusted_builder: ['view', 'create_blocks', 'create_paths', 'create_suggestions', 'review_suggestions'],
+      builder: ['view', 'create_blocks', 'create_paths', 'create_suggestions'],
+      guest: ['view', 'create_suggestions']
     }
 
     const permissions = rolePermissions[user.role] || []

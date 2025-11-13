@@ -11,7 +11,7 @@ import { Block } from '@blocknote/core'
 import { SharePanel } from '@/components/SharePanel'
 import { RevisionHistory } from '@/components/RevisionHistory'
 import { useAuth } from '@/hooks/useAuth'
-import { ChevronDown, ChevronRight } from 'lucide-react'
+import { ChevronDown, ChevronRight, ArrowLeft } from 'lucide-react'
 
 export default function BlockDetailPage() {
   const params = useParams()
@@ -29,6 +29,9 @@ export default function BlockDetailPage() {
   const [editTitle, setEditTitle] = useState('')
   const [pathsUsingBlock, setPathsUsingBlock] = useState<PathPublic[]>([])
   const [isContentCollapsed, setIsContentCollapsed] = useState(false)
+  const [isMastered, setIsMastered] = useState(false)
+  const [masteredAt, setMasteredAt] = useState<string | null>(null)
+  const [isMasteryLoading, setIsMasteryLoading] = useState(false)
 
   useEffect(() => {
     if (slug) {
@@ -36,6 +39,13 @@ export default function BlockDetailPage() {
       loadPathsUsingBlock()
     }
   }, [slug])
+
+  useEffect(() => {
+    // Auto-collapse content if mastered
+    if (isMastered) {
+      setIsContentCollapsed(true)
+    }
+  }, [isMastered])
 
   const loadBlock = async () => {
     try {
@@ -49,6 +59,9 @@ export default function BlockDetailPage() {
         if (response.data.content && response.data.metadata?.blocknote_content) {
           setEditContent(response.data.metadata.blocknote_content)
         }
+
+        // Load mastery status
+        await loadMasteryStatus(response.data.id)
       } else {
         router.push('/blocks')
       }
@@ -57,6 +70,51 @@ export default function BlockDetailPage() {
       router.push('/blocks')
     } finally {
       setIsLoading(false)
+    }
+  }
+
+  const loadMasteryStatus = async (blockId: string) => {
+    try {
+      const token = api.getToken()
+      if (!token) return // User not logged in
+
+      const response = await api.checkBlockProgress(blockId)
+      if (response.data) {
+        setIsMastered(response.data.mastered)
+        setMasteredAt(response.data.mastered_at || null)
+      }
+    } catch (error) {
+      console.error('Failed to load mastery status:', error)
+    }
+  }
+
+  const toggleMastery = async () => {
+    if (!block) return
+
+    try {
+      setIsMasteryLoading(true)
+      if (isMastered) {
+        // Unmark as mastered
+        const response = await api.unmarkBlockMastered(block.id)
+        if (response.data || !response.error) {
+          setIsMastered(false)
+          setMasteredAt(null)
+          setIsContentCollapsed(false)
+        }
+      } else {
+        // Mark as mastered
+        const response = await api.markBlockMastered(block.id)
+        if (response.data || !response.error) {
+          setIsMastered(true)
+          setMasteredAt(new Date().toISOString())
+          setIsContentCollapsed(true)
+        }
+      }
+    } catch (error) {
+      console.error('Failed to toggle mastery:', error)
+      alert('Failed to update mastery status')
+    } finally {
+      setIsMasteryLoading(false)
     }
   }
 
@@ -145,9 +203,10 @@ export default function BlockDetailPage() {
         <div className="mb-6">
           <button
             onClick={() => router.push('/blocks')}
-            className="text-primary hover:underline mb-4 inline-block"
+            className="flex items-center gap-2 text-muted-foreground hover:text-primary transition-colors"
           >
-            ← Back to Blocks
+            <ArrowLeft className="h-4 w-4" />
+            <span>Back to Blocks</span>
           </button>
         </div>
 
@@ -198,7 +257,14 @@ export default function BlockDetailPage() {
           <div className="space-y-6">
             <div className="flex justify-between items-start">
               <div>
-                <h1 className="text-3xl font-bold mb-2">{block.title}</h1>
+                <div className="flex items-center gap-3 mb-2">
+                  <h1 className="text-3xl font-bold">{block.title}</h1>
+                  {isMastered && (
+                    <span className="flex items-center gap-1 px-3 py-1 bg-green-100 text-green-800 text-sm font-medium rounded-full">
+                      ✓ Mastered
+                    </span>
+                  )}
+                </div>
                 <div className="flex items-center gap-4 text-sm text-muted-foreground">
                   <span className={`px-2 py-1 rounded-full text-xs ${
                     block.block_type === 'text' ? 'bg-blue-100 text-blue-800' :
@@ -214,9 +280,29 @@ export default function BlockDetailPage() {
                   {block.is_locked && (
                     <span className="text-orange-600">🔒 Locked</span>
                   )}
+                  {isMastered && masteredAt && (
+                    <span className="text-green-600">Mastered {formatDate(masteredAt)}</span>
+                  )}
                 </div>
               </div>
               <div className="flex gap-2">
+                <button
+                  onClick={toggleMastery}
+                  disabled={isMasteryLoading}
+                  className={`flex items-center gap-2 px-4 py-2 rounded-md font-medium transition-colors ${
+                    isMastered
+                      ? 'bg-green-600 text-white hover:bg-green-700'
+                      : 'border-2 border-green-600 text-green-600 hover:bg-green-50'
+                  } disabled:opacity-50 disabled:cursor-not-allowed`}
+                >
+                  {isMasteryLoading ? (
+                    'Loading...'
+                  ) : isMastered ? (
+                    <>✓ I Know This</>
+                  ) : (
+                    <>I Know This</>
+                  )}
+                </button>
                 {hasPermission('create_blocks') && (
                   <button
                     onClick={() => setIsEditing(true)}
@@ -225,7 +311,7 @@ export default function BlockDetailPage() {
                     Edit Block
                   </button>
                 )}
-                {hasPermission('suggest_edits') && (
+                {hasPermission('create_suggestions') && (
                   <button
                     onClick={() => setIsSuggestOpen(true)}
                     className="border border-primary text-primary px-4 py-2 rounded-md hover:bg-primary/10"
@@ -240,17 +326,19 @@ export default function BlockDetailPage() {
               <div className="mb-4 flex items-center justify-between">
                 <button
                   onClick={() => setIsContentCollapsed(!isContentCollapsed)}
-                  className="flex items-center gap-2 text-sm font-medium hover:text-primary transition-colors"
+                  className={`flex items-center gap-2 text-sm font-medium transition-colors ${
+                    isMastered ? 'text-green-600 hover:text-green-700' : 'hover:text-primary'
+                  }`}
                 >
                   {isContentCollapsed ? (
                     <>
                       <ChevronRight className="h-4 w-4" />
-                      <span>I know this... (Show content)</span>
+                      <span>{isMastered ? 'Content hidden (already mastered)' : 'Show content'}</span>
                     </>
                   ) : (
                     <>
                       <ChevronDown className="h-4 w-4" />
-                      <span>I know this... (Hide content)</span>
+                      <span>Hide content</span>
                     </>
                   )}
                 </button>

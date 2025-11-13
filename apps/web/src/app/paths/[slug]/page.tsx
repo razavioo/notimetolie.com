@@ -5,6 +5,7 @@ import { useParams, useRouter } from 'next/navigation'
 import { api } from '@/lib/api'
 import type { PathPublic } from '@/types/api'
 import { SharePanel } from '@/components/SharePanel'
+import { ArrowLeft } from 'lucide-react'
 
 export default function PathDetailPage() {
   const params = useParams()
@@ -13,10 +14,16 @@ export default function PathDetailPage() {
 
   const [path, setPath] = useState<PathPublic | null>(null)
   const [isLoading, setIsLoading] = useState(true)
+  const [masteredBlocks, setMasteredBlocks] = useState<Set<string>>(new Set())
+  const [isMarkingAll, setIsMarkingAll] = useState(false)
 
   useEffect(() => {
     if (slug) loadPath()
   }, [slug])
+
+  useEffect(() => {
+    if (path) loadUserProgress()
+  }, [path])
 
   const loadPath = async () => {
     try {
@@ -29,6 +36,40 @@ export default function PathDetailPage() {
       router.push('/paths')
     } finally {
       setIsLoading(false)
+    }
+  }
+
+  const loadUserProgress = async () => {
+    try {
+      const token = api.getToken()
+      if (!token) return // User not logged in
+
+      const response = await api.getUserProgress()
+      if (response.data) {
+        const masteredIds = new Set(response.data.map(p => p.content_node_id))
+        setMasteredBlocks(masteredIds)
+      }
+    } catch (error) {
+      console.error('Failed to load user progress:', error)
+    }
+  }
+
+  const handleMarkAllMastered = async () => {
+    if (!path) return
+
+    try {
+      setIsMarkingAll(true)
+      const response = await api.markPathMastered(path.id)
+      if (response.data || !response.error) {
+        // Reload progress to update UI
+        await loadUserProgress()
+        alert('All blocks in this path marked as mastered!')
+      }
+    } catch (error) {
+      console.error('Failed to mark path as mastered:', error)
+      alert('Failed to mark path as mastered')
+    } finally {
+      setIsMarkingAll(false)
     }
   }
 
@@ -54,9 +95,10 @@ export default function PathDetailPage() {
         <div className="mb-6">
           <button
             onClick={() => router.push('/paths')}
-            className="text-primary hover:underline mb-4 inline-block"
+            className="flex items-center gap-2 text-muted-foreground hover:text-primary transition-colors"
           >
-            ← Back to Paths
+            <ArrowLeft className="h-4 w-4" />
+            <span>Back to Learning Paths</span>
           </button>
         </div>
 
@@ -74,8 +116,25 @@ export default function PathDetailPage() {
                     <span className="text-green-600">✓ Published</span>
                   </>
                 )}
+                {masteredBlocks.size > 0 && (
+                  <>
+                    <span>•</span>
+                    <span className="text-green-600">
+                      ✓ {masteredBlocks.size} mastered
+                    </span>
+                  </>
+                )}
               </div>
             </div>
+            {api.getToken() && path.blocks.length > 0 && (
+              <button
+                onClick={handleMarkAllMastered}
+                disabled={isMarkingAll}
+                className="flex items-center gap-2 px-4 py-2 bg-green-600 text-white rounded-md hover:bg-green-700 transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
+              >
+                {isMarkingAll ? 'Marking...' : '✓ Mark All As Mastered'}
+              </button>
+            )}
           </div>
 
           <div className="pt-6 space-y-6">
@@ -100,6 +159,7 @@ export default function PathDetailPage() {
                   {path.blocks.map((block, index) => {
                     const isFirst = index === 0
                     const isLast = index === path.blocks.length - 1
+                    const isMastered = masteredBlocks.has(block.id)
                     
                     return (
                       <div
@@ -108,26 +168,51 @@ export default function PathDetailPage() {
                         className="relative group"
                       >
                         {/* Animated hover background */}
-                        <div className="absolute inset-0 bg-gradient-to-r from-primary/5 to-transparent rounded-2xl opacity-0 group-hover:opacity-100 transition-opacity duration-300"></div>
+                        <div className={`absolute inset-0 rounded-2xl opacity-0 group-hover:opacity-100 transition-opacity duration-300 ${
+                          isMastered ? 'bg-gradient-to-r from-green-50 to-transparent' : 'bg-gradient-to-r from-primary/5 to-transparent'
+                        }`}></div>
                         
                         {/* Content card */}
-                        <div className="relative flex items-start gap-6 p-6 rounded-2xl border-2 border-border bg-card hover:border-primary/50 transition-all duration-300 hover:shadow-lg hover:scale-[1.01] cursor-pointer">
+                        <div className={`relative flex items-start gap-6 p-6 rounded-2xl border-2 bg-card hover:shadow-lg hover:scale-[1.01] cursor-pointer transition-all duration-300 ${
+                          isMastered 
+                            ? 'border-green-200 bg-green-50/30 hover:border-green-400' 
+                            : 'border-border hover:border-primary/50'
+                        }`}>
                           {/* Step number with glow */}
                           <div className="relative flex-shrink-0">
-                            <div className="w-14 h-14 rounded-full bg-gradient-to-br from-primary to-primary/70 text-white flex items-center justify-center font-bold text-lg shadow-lg group-hover:scale-110 transition-transform duration-300">
-                              {index + 1}
+                            <div className={`w-14 h-14 rounded-full text-white flex items-center justify-center font-bold text-lg shadow-lg group-hover:scale-110 transition-transform duration-300 ${
+                              isMastered 
+                                ? 'bg-gradient-to-br from-green-500 to-green-600' 
+                                : 'bg-gradient-to-br from-primary to-primary/70'
+                            }`}>
+                              {isMastered ? '✓' : index + 1}
                             </div>
                             {/* Glow effect on hover */}
-                            <div className="absolute inset-0 rounded-full bg-primary/30 blur-xl opacity-0 group-hover:opacity-50 transition-opacity duration-300"></div>
+                            <div className={`absolute inset-0 rounded-full blur-xl opacity-0 group-hover:opacity-50 transition-opacity duration-300 ${
+                              isMastered ? 'bg-green-500/30' : 'bg-primary/30'
+                            }`}></div>
                           </div>
                           
                           {/* Block content */}
                           <div className="flex-1 min-w-0 pt-1">
                             <div className="flex items-start justify-between gap-4 mb-3">
-                              <h4 className="font-bold text-xl leading-tight group-hover:text-primary transition-colors">
-                                {block.title}
-                              </h4>
-                              <span className="flex-shrink-0 px-3 py-1 rounded-full text-xs font-medium bg-primary/10 text-primary border border-primary/20">
+                              <div className="flex items-center gap-3">
+                                <h4 className={`font-bold text-xl leading-tight transition-colors ${
+                                  isMastered ? 'text-green-800 group-hover:text-green-900' : 'group-hover:text-primary'
+                                }`}>
+                                  {block.title}
+                                </h4>
+                                {isMastered && (
+                                  <span className="flex items-center gap-1 px-2 py-0.5 bg-green-100 text-green-700 text-xs font-medium rounded-full">
+                                    Mastered
+                                  </span>
+                                )}
+                              </div>
+                              <span className={`flex-shrink-0 px-3 py-1 rounded-full text-xs font-medium border ${
+                                isMastered 
+                                  ? 'bg-green-50 text-green-700 border-green-200'
+                                  : 'bg-primary/10 text-primary border-primary/20'
+                              }`}>
                                 {block.block_type}
                               </span>
                             </div>

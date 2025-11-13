@@ -9,6 +9,7 @@ import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/com
 import { Button } from '@/components/ui/button'
 import { AIConfigForm } from '@/components/AIConfigForm'
 import { useAIJobUpdates } from '@/hooks/useWebSocket'
+import { PageHeader } from '@/components/PageHeader'
 
 interface AIConfig {
   id: string
@@ -147,10 +148,10 @@ export default function AIConfigPage() {
 
   return (
     <div className="container mx-auto px-4 py-8">
-      <div className="flex justify-between items-center mb-8">
-        <div>
-          <h1 className="text-3xl font-bold flex items-center gap-3">
-            AI Agent Configuration
+      <PageHeader
+        title={
+          <div className="flex items-center gap-3">
+            <span>AI Agents</span>
             {wsConnected ? (
               <span className="flex items-center gap-1 text-sm font-normal text-green-600 dark:text-green-400">
                 <Wifi className="h-4 w-4" />
@@ -162,19 +163,20 @@ export default function AIConfigPage() {
                 Offline
               </span>
             )}
-          </h1>
-          <p className="text-muted-foreground mt-2">
-            Configure and manage your AI assistants for content creation
-          </p>
-        </div>
-        <Button
-          onClick={() => setShowCreateForm(true)}
-          className="flex items-center gap-2"
-        >
-          <Plus className="h-4 w-4" />
-          New Agent
-        </Button>
-      </div>
+          </div>
+        }
+        description="Configure and manage AI assistants for content creation"
+        icon={<Settings className="h-8 w-8 text-primary" />}
+        actions={
+          <Button
+            onClick={() => setShowCreateForm(true)}
+            className="flex items-center gap-2"
+          >
+            <Plus className="h-4 w-4" />
+            New Agent
+          </Button>
+        }
+      />
 
       {/* Active Jobs Section */}
       {activeJobs.length > 0 && (

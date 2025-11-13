@@ -10,8 +10,9 @@ import { useToast } from '@/components/ToastProvider'
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card'
 import { Button } from '@/components/ui/button'
 import { LoadingSpinner } from '@/components/LoadingSpinner'
-import { Plus } from 'lucide-react'
+import { Plus, FileText } from 'lucide-react'
 import { useAuth } from '@/hooks/useAuth'
+import { PageHeader } from '@/components/PageHeader'
 
 export default function BlocksPage() {
   const { hasPermission } = useAuth()
@@ -146,13 +147,12 @@ export default function BlocksPage() {
 
   return (
     <div className="container mx-auto px-4 py-8">
-      <div className="flex justify-between items-center mb-8">
-        <div>
-          <h1 className="text-3xl font-bold">Knowledge Blocks</h1>
-          <p className="text-muted-foreground">Create, edit, and manage your knowledge blocks</p>
-        </div>
-        <div className="flex gap-2">
-          {hasPermission('create_blocks') && (
+      <PageHeader
+        title="Blocks"
+        description="Create and manage reusable content blocks"
+        icon={<FileText className="h-8 w-8 text-primary" />}
+        actions={
+          hasPermission('create_blocks') ? (
             <Button
               onClick={() => setShowForm(true)}
               className="flex items-center gap-2"
@@ -160,9 +160,9 @@ export default function BlocksPage() {
               <Plus className="h-4 w-4" />
               Create Block
             </Button>
-          )}
-        </div>
-      </div>
+          ) : undefined
+        }
+      />
 
       {error && (
         <Card className="mb-6 border-red-200 bg-red-50">
@@ -211,19 +211,24 @@ export default function BlocksPage() {
       {blocks.length === 0 && !isLoading ? (
         <Card className="text-center py-12">
           <CardHeader>
-            <CardTitle>Start Building Your Knowledge Base</CardTitle>
+            <div className="mx-auto mb-4 w-16 h-16 bg-primary/10 rounded-full flex items-center justify-center">
+              <FileText className="h-8 w-8 text-primary" />
+            </div>
+            <CardTitle>No Blocks Yet</CardTitle>
             <CardDescription className="max-w-md mx-auto">
-              Create your first knowledge block to get started. Blocks are the foundation of your knowledge infrastructure.
+              Create your first content block to get started. Blocks are reusable units of content that can be organized into learning paths.
             </CardDescription>
           </CardHeader>
           <CardContent>
-            <Button
-              onClick={() => setShowForm(true)}
-              className="mt-4 flex items-center gap-2 mx-auto"
-            >
-              <Plus className="h-4 w-4" />
-              Create Your First Block
-            </Button>
+            {hasPermission('create_blocks') && (
+              <Button
+                onClick={() => setShowForm(true)}
+                className="mt-4 flex items-center gap-2 mx-auto"
+              >
+                <Plus className="h-4 w-4" />
+                Create Your First Block
+              </Button>
+            )}
           </CardContent>
         </Card>
       ) : (

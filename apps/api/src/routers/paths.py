@@ -6,8 +6,8 @@ from pydantic import BaseModel
 import uuid
 
 from ..database import get_db
-from ..models import ContentNode, User, NodeLevel
-from ..dependencies import get_current_active_user, require_permission
+from ..models import ContentNode, User, NodeLevel, UserProgress
+from ..dependencies import get_current_active_user, require_permission, get_current_user_optional
 from ..events.bus import bus
 from ..events.events import PathCreated, PathUpdated, PathDeleted
 
@@ -40,6 +40,8 @@ class PathResponse(BaseModel):
     updated_at: str
     created_by_id: Optional[str] = None
     blocks: List[dict] = []
+    mastered: bool = False
+    mastered_at: Optional[str] = None
 
     class Config:
         from_attributes = True
@@ -151,8 +153,12 @@ async def get_paths(
 
 
 @router.get("/paths/{slug}", response_model=PathResponse)
-async def get_path(slug: str, db: AsyncSession = Depends(get_db)):
-    """Get a specific path by slug"""
+async def get_path(
+    slug: str, 
+    db: AsyncSession = Depends(get_db),
+    current_user: Optional[User] = Depends(get_current_user_optional)
+):
+    """Get a specific path by slug with optional progress status"""
     result = await db.execute(
         select(ContentNode).where(ContentNode.slug == slug, ContentNode.level == NodeLevel.PATH)
     )
@@ -160,6 +166,15 @@ async def get_path(slug: str, db: AsyncSession = Depends(get_db)):
 
     if not path:
         raise HTTPException(status_code=404, detail="Path not found")
+
+    # Get user's progress for all content if authenticated
+    user_progress_map = {}
+    if current_user:
+        progress_result = await db.execute(
+            select(UserProgress).where(UserProgress.user_id == current_user.id)
+        )
+        for progress in progress_result.scalars().all():
+            user_progress_map[str(progress.content_node_id)] = progress.mastered_at.isoformat()
 
     # Get blocks for this path (ordered by metadata.block_ids, fallback to relationship)
     async def build_ordered_blocks(path_node: ContentNode) -> List[dict]:
@@ -182,8 +197,9 @@ async def get_path(slug: str, db: AsyncSession = Depends(get_db)):
                 for bid in order_ids:
                     b = by_id.get(bid)
                     if b:
+                        block_id = str(b.id)
                         ordered.append({
-                            "id": str(b.id),
+                            "id": block_id,
                             "title": b.title,
                             "content": b.content,
                             "slug": b.slug,
@@ -194,6 +210,8 @@ async def get_path(slug: str, db: AsyncSession = Depends(get_db)):
                             "updated_at": b.updated_at.isoformat(),
                             "created_by_id": str(b.created_by_id) if b.created_by_id else None,
                             "metadata": b.metadata,
+                            "mastered": block_id in user_progress_map,
+                            "mastered_at": user_progress_map.get(block_id)
                         })
                 return ordered
             except Exception:
@@ -210,8 +228,9 @@ async def get_path(slug: str, db: AsyncSession = Depends(get_db)):
         )
         children = result_children.scalars().all()
         for b in children:
+            block_id = str(b.id)
             ordered.append({
-                "id": str(b.id),
+                "id": block_id,
                 "title": b.title,
                 "content": b.content,
                 "slug": b.slug,
@@ -222,13 +241,20 @@ async def get_path(slug: str, db: AsyncSession = Depends(get_db)):
                 "updated_at": b.updated_at.isoformat(),
                 "created_by_id": str(b.created_by_id) if b.created_by_id else None,
                 "metadata": b.metadata,
+                "mastered": block_id in user_progress_map,
+                "mastered_at": user_progress_map.get(block_id)
             })
         return ordered
 
     blocks = await build_ordered_blocks(path)
+    
+    # Check if path itself is mastered
+    path_id = str(path.id)
+    path_mastered = path_id in user_progress_map
+    path_mastered_at = user_progress_map.get(path_id)
 
     return PathResponse(
-        id=str(path.id),
+        id=path_id,
         title=path.title,
         slug=path.slug,
         description=path.content,
@@ -237,7 +263,9 @@ async def get_path(slug: str, db: AsyncSession = Depends(get_db)):
         created_at=path.created_at.isoformat(),
         updated_at=path.updated_at.isoformat(),
         created_by_id=str(path.created_by_id) if path.created_by_id else None,
-        blocks=blocks
+        blocks=blocks,
+        mastered=path_mastered,
+        mastered_at=path_mastered_at
     )
 
 

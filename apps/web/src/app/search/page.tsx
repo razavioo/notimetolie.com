@@ -6,6 +6,8 @@ import { SearchInput } from '@/components/SearchInput'
 import { SearchResults } from '@/components/SearchResults'
 import { api } from '@/lib/api'
 import { SearchResponse, SearchHit } from '@/types/api'
+import { PageHeader } from '@/components/PageHeader'
+import { Search } from 'lucide-react'
 
 export default function SearchPage() {
   const router = useRouter()
@@ -94,15 +96,14 @@ export default function SearchPage() {
 
   return (
     <div className="container mx-auto px-4 py-8">
+      <PageHeader
+        title="Search"
+        description="Find blocks, paths, and content"
+        icon={<Search className="h-8 w-8 text-primary" />}
+      />
+      
       <div className="max-w-4xl mx-auto">
-        <div className="text-center mb-8">
-          <h1 className="text-3xl font-bold mb-2">Search Knowledge Base</h1>
-          <p className="text-muted-foreground">
-            Find blocks, paths, and knowledge content
-          </p>
-        </div>
-
-        <div className="mb-8">
+        <div className="mb-6">
           <SearchInput
             value={query}
             onChange={setQuery}

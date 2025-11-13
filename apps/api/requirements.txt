@@ -32,3 +32,6 @@ anthropic==0.7.0
 
 # Encryption
 cryptography==41.0.7
+
+# MCP Server
+mcp>=0.9.0

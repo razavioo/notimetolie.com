@@ -4,6 +4,7 @@ import { useEffect, useState } from 'react'
 import { api } from '@/lib/api'
 import type { SuggestionResponse } from '@/types/api'
 import { Shield, AlertCircle } from 'lucide-react'
+import { PageHeader } from '@/components/PageHeader'
 
 export default function ModerationDashboardPage() {
   const [pending, setPending] = useState<SuggestionResponse[]>([])
@@ -55,11 +56,14 @@ export default function ModerationDashboardPage() {
   }
 
   return (
-    <div className="max-w-4xl mx-auto p-6">
-      <div className="flex items-center gap-3 mb-6">
-        <Shield className="h-8 w-8 text-primary" />
-        <h1 className="text-3xl font-bold">Moderator Dashboard</h1>
-      </div>
+    <div className="container mx-auto px-4 py-8">
+      <PageHeader
+        title="Moderation"
+        description="Review and manage content suggestions"
+        icon={<Shield className="h-8 w-8 text-primary" />}
+      />
+
+      <div className="max-w-4xl mx-auto">
 
       {error ? (
         <div className="bg-red-50 dark:bg-red-900/20 border border-red-200 dark:border-red-800 rounded-lg p-6 mb-6">
@@ -131,6 +135,7 @@ export default function ModerationDashboardPage() {
           ))}
         </div>
       )}
+      </div>
     </div>
   )
 }

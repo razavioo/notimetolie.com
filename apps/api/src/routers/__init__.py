@@ -4,5 +4,6 @@ from .paths import router as paths_router
 from .embed import router as embed_router
 from .search import router as search_router
 from .moderation import router as moderation_router
+from .progress import router as progress_router
 
-__all__ = ["users_router", "blocks_router", "paths_router", "embed_router", "search_router", "moderation_router"]
+__all__ = ["users_router", "blocks_router", "paths_router", "embed_router", "search_router", "moderation_router", "progress_router"]

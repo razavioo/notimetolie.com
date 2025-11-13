@@ -98,10 +98,19 @@ export default function CreatePathPage() {
   return (
     <div className="container mx-auto px-4 py-8">
       <div className="max-w-6xl mx-auto">
+        <div className="mb-6">
+          <button
+            onClick={() => router.push('/paths')}
+            className="flex items-center gap-2 text-muted-foreground hover:text-primary transition-colors"
+          >
+            <span>← Back to Learning Paths</span>
+          </button>
+        </div>
+
         <div className="mb-8">
-          <h1 className="text-3xl font-bold mb-2">Create New Path</h1>
+          <h1 className="text-3xl font-bold mb-2">Create Learning Path</h1>
           <p className="text-muted-foreground">
-            Organize blocks into a structured learning path
+            Organize blocks into a structured learning journey
           </p>
         </div>
 

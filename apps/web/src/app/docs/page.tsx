@@ -1,7 +1,14 @@
+import { PageHeader } from '@/components/PageHeader'
+import { BookOpen } from 'lucide-react'
+
 export default function DocsPage() {
   return (
     <main className="container mx-auto px-4 py-8">
-      <h1 className="text-3xl font-bold mb-6">API & Embedding Docs</h1>
+      <PageHeader
+        title="API & Embedding"
+        description="Documentation for developers integrating content"
+        icon={<BookOpen className="h-8 w-8 text-primary" />}
+      />
 
       <section className="space-y-3 mb-8">
         <h2 className="text-xl font-semibold">Base URL</h2>

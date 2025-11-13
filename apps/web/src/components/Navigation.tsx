@@ -12,7 +12,8 @@ const navigation = [
   { name: 'Blocks', href: '/blocks', roles: ['*'] },
   { name: 'Paths', href: '/paths', roles: ['*'] },
   { name: 'Search', href: '/search', roles: ['*'] },
-  { name: 'API Docs', href: '/docs', roles: ['*'] },
+  { name: 'API', href: '/docs', roles: ['*'] },
+  { name: 'MCP', href: '/mcp', roles: ['*'] },
   { name: 'Moderation', href: '/moderation', roles: ['moderator', 'admin'] },
 ]
 

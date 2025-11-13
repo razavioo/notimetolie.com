@@ -7,6 +7,9 @@ import { PathForm } from '@/components/PathForm'
 import { PathPublic, PathCreate } from '@/types/api'
 import { api } from '@/lib/api'
 import { useAuth } from '@/hooks/useAuth'
+import { PageHeader } from '@/components/PageHeader'
+import { Plus, Route } from 'lucide-react'
+import { Button } from '@/components/ui/button'
 
 export default function PathsPage() {
   const router = useRouter()
@@ -78,20 +81,22 @@ export default function PathsPage() {
 
   return (
     <div className="container mx-auto px-4 py-8">
-      <div className="flex justify-between items-center mb-8">
-        <div>
-          <h1 className="text-3xl font-bold">Paths</h1>
-          <p className="text-muted-foreground">Organize blocks into structured learning journeys</p>
-        </div>
-        {hasPermission('create_paths') && (
-          <button
-            onClick={() => router.push('/paths/create')}
-            className="bg-primary text-primary-foreground px-4 py-2 rounded-md hover:bg-primary/90"
-          >
-            Create Path
-          </button>
-        )}
-      </div>
+      <PageHeader
+        title="Learning Paths"
+        description="Organize blocks into structured learning journeys"
+        icon={<Route className="h-8 w-8 text-primary" />}
+        actions={
+          hasPermission('create_paths') ? (
+            <Button
+              onClick={() => router.push('/paths/create')}
+              className="flex items-center gap-2"
+            >
+              <Plus className="h-4 w-4" />
+              Create Path
+            </Button>
+          ) : undefined
+        }
+      />
 
       {(showForm || editingPath) && (
         <div className="mb-8 p-6 border rounded-lg bg-card">
@@ -122,17 +127,23 @@ export default function PathsPage() {
       )}
 
       {paths.length === 0 ? (
-        <div className="text-center py-12">
-          <h3 className="text-lg font-semibold mb-2">No paths yet</h3>
-          <p className="text-muted-foreground mb-4">
-            Create your first learning path to get started
+        <div className="border-2 border-dashed rounded-lg p-12 text-center">
+          <div className="mx-auto mb-4 w-16 h-16 bg-primary/10 rounded-full flex items-center justify-center">
+            <Route className="h-8 w-8 text-primary" />
+          </div>
+          <h3 className="text-lg font-semibold mb-2">No Learning Paths Yet</h3>
+          <p className="text-muted-foreground mb-4 max-w-md mx-auto">
+            Create your first learning path to organize blocks into structured learning journeys
           </p>
-          <button
-            onClick={() => router.push('/paths/create')}
-            className="bg-primary text-primary-foreground px-4 py-2 rounded-md hover:bg-primary/90"
-          >
-            Create Your First Path
-          </button>
+          {hasPermission('create_paths') && (
+            <Button
+              onClick={() => router.push('/paths/create')}
+              className="flex items-center gap-2 mx-auto"
+            >
+              <Plus className="h-4 w-4" />
+              Create Your First Path
+            </Button>
+          )}
         </div>
       ) : (
         <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">

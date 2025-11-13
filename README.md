@@ -74,7 +74,12 @@ curl http://localhost:8000/v1/blocks    # Should return [] (empty array)
     *   [7.2. Multi-Layered Monetization Strategy](#72-multi-layered-monetization-strategy)
 8.  [**Project Structure & Implementation Guidelines**](#8-project-structure--implementation-guidelines)
     *   [8.1. Monorepo Directory Structure](#81-monorepo-directory-structure)
-    *   [8.2. Coding Standards & Conventions](#82-coding-standards--conventions)
+    *   [8.2. Getting Started](#82-getting-started)
+    *   [8.3. Coding Standards & Conventions](#83-coding-standards--conventions)
+    *   [8.4. Project Documentation Rules](#84-project-documentation-rules)
+    *   [8.5. Development Workflow](#85-development-workflow)
+    *   [8.6. Current Application Structure](#86-current-application-structure)
+    *   [8.7. AI-Assisted Content Creation](#87-ai-assisted-content-creation)
 9.  [**Operational Requirements & SLA**](#9-operational-requirements--sla)
 10. [**Why Build From Scratch? A Strategic Analysis**](#10-why-build-from-scratch)
 11. [**Appendix: Core API Endpoints**](#11-appendix-core-api-endpoints)
@@ -366,7 +371,28 @@ npm run docker:up
 *   **Frontend:** Prettier for formatting, ESLint for linting, and Conventional Commits for Git messages.
 *   **API:** Adherence to RESTful principles. All endpoints will be versioned (`/v1/...`).
 
-### **8.4. Development Workflow**
+### **8.4. Project Documentation Rules**
+
+**📋 Documentation Convention:**
+- **Only `README.md` files are allowed** in the project
+- All project documentation must be consolidated into relevant `README.md` files
+- Do NOT create separate `.md` files (e.g., `CHANGELOG.md`, `IMPLEMENTATION_SUMMARY.md`, `DEPLOYMENT_GUIDE.md`, etc.)
+- Keep documentation close to the code it describes
+
+**Rationale:** 
+- Centralized documentation in README files prevents documentation sprawl
+- Easier to maintain and keep up-to-date
+- Clear single source of truth for each component/feature
+- AI assistants (like Droid) and developers should reference and update README.md files only
+
+**Where to Document:**
+- **Project root**: `/README.md` - Main project documentation (this file)
+- **API module**: `/apps/api/README.md` - API-specific setup and conventions
+- **Web app**: `/apps/web/README.md` - Frontend-specific documentation
+- **Packages**: `/packages/*/README.md` - Individual package documentation
+- **Scripts**: `/apps/api/scripts/README.md` - Script-specific documentation
+
+### **8.5. Development Workflow**
 
 #### **Database Migrations**
 
@@ -434,7 +460,7 @@ npm run lint         # ESLint
 npm run format       # Prettier
 ```
 
-### **8.5. Current Application Structure**
+### **8.6. Current Application Structure**
 
 The application is currently organized as follows:
 
@@ -451,6 +477,179 @@ The application is currently organized as follows:
     *   `components/` - Reusable React components
     *   `types/` - TypeScript type definitions
     *   Features: Navigation, Block Editor (BlockNote), Theme Toggle, Search
+
+### **8.7. AI-Assisted Content Creation**
+
+The platform includes a powerful AI agent system that helps builders create high-quality content using OpenAI-based APIs with Model Context Protocol (MCP) integration.
+
+#### **Overview**
+
+AI agents serve as intelligent assistants that can:
+- Research topics by searching existing content and the web
+- Generate structured content drafts (Blocks and Paths)
+- Find and suggest relevant images or create image prompts
+- Ensure copyright compliance and factual accuracy
+- Provide context-aware suggestions using MCP to avoid duplication
+
+#### **Key Concepts**
+
+**Blocks vs. Paths:**
+- **Block**: The smallest atomic unit of knowledge - self-contained, meaningful, with unique URL. Examples: a tutorial step, a concept explanation, a code snippet with explanation.
+- **Path**: An ordered collection of Blocks forming a complete guide or learning journey. Think of it as a "course" or "complete tutorial" composed of multiple Blocks.
+
+**AI Agent Types:**
+- **Content Creator**: Generates new Blocks from user prompts, searches existing content first
+- **Content Researcher**: Finds relevant resources, existing Blocks, and web sources
+- **Content Editor**: Improves and refines existing content for clarity and accuracy
+- **Course Designer**: Creates structured Paths by selecting and ordering Blocks
+
+#### **How It Works**
+
+**1. Configuration**
+Navigate to `/ai-config` to create and manage AI agent configurations:
+- Choose AI provider (OpenAI, Anthropic, or custom API)
+- Select agent type and purpose
+- Configure model parameters (temperature, max tokens)
+- Enable MCP integration for context-aware assistance
+- Set up tool permissions (web search, block creation, content editing)
+
+**2. Content Creation Flow**
+
+When creating a Block or Path with AI assistance:
+
+```
+User Prompt → AI Agent → Search Existing Content (MCP) → 
+Generate Draft → Review & Suggest → User Approval → Published Content
+```
+
+**Example workflow for creating a Block:**
+1. User provides prompt: "Create a tutorial about Python async/await for beginners"
+2. AI searches existing Blocks via MCP to avoid duplication
+3. AI performs web search if enabled to gather current information
+4. AI generates structured Block template with:
+   - Clear title and slug
+   - Well-organized content (using BlockNote editor format)
+   - Relevant code examples
+   - Source URLs for verification
+   - Suggested tags
+5. User reviews the generated template
+6. User approves and publishes the Block
+
+**Example workflow for creating a Path:**
+1. User provides prompt: "Create a complete guide to learning React from scratch"
+2. AI searches existing Blocks related to React
+3. AI suggests existing Blocks that can be reused
+4. AI identifies gaps and suggests new Blocks to create
+5. AI proposes Path structure with ordered Block sequence
+6. User reviews, adjusts, and approves
+7. Path is created with selected/new Blocks
+
+**3. MCP Integration**
+
+The Model Context Protocol enables AI agents to:
+- **Search existing content**: Find relevant Blocks before creating new ones
+- **Retrieve full Block content**: Understand context and avoid duplication
+- **Discover related content**: Suggest connections between topics
+- **Access site metadata**: Understand content structure and categories
+
+**Available MCP Tools:**
+- `search_blocks(query, limit)` - Search existing knowledge blocks
+- `get_block_content(block_id)` - Retrieve full Block content
+- `discover_related(topic, max_results)` - Find related content
+- `list_paths(category)` - Browse existing learning paths
+
+**4. Copyright & Content Quality**
+
+AI agents are configured to:
+- ✅ Generate original content or properly attribute sources
+- ✅ Provide source URLs for factual claims
+- ✅ Suggest image URLs from licensed sources or generate image prompts
+- ✅ Flag content requiring expert review
+- ✅ Include confidence scores and rationale for suggestions
+
+⚠️ **Human Review Required**: All AI-generated content must be reviewed and approved by a Builder before publication. AI is an assistant, not a replacement for human judgment.
+
+#### **API Endpoints**
+
+**AI Configuration:**
+- `POST /v1/ai/configurations` - Create AI agent configuration
+- `GET /v1/ai/configurations` - List your AI agents
+- `PUT /v1/ai/configurations/{id}` - Update configuration
+- `DELETE /v1/ai/configurations/{id}` - Delete agent
+
+**AI Jobs:**
+- `POST /v1/ai/jobs` - Create new AI content generation job
+- `GET /v1/ai/jobs/{id}` - Get job status and results
+- `POST /v1/ai/jobs/{id}/cancel` - Cancel running job
+- `GET /v1/ai/jobs/{id}/suggestions` - List AI-generated suggestions
+
+**Suggestion Management:**
+- `POST /v1/ai/suggestions/{id}/approve` - Approve and create Block
+- `POST /v1/ai/suggestions/{id}/reject` - Reject with feedback
+
+#### **Permissions**
+
+Required permissions for AI features:
+- `use_ai_agents` - Access AI configuration and job creation
+- `create_blocks` - Approve AI suggestions and create Blocks
+- `create_paths` - Create Paths from AI suggestions
+
+#### **Usage Example**
+
+```bash
+# 1. Create AI configuration
+curl -X POST http://localhost:8000/v1/ai/configurations \
+  -H "Authorization: Bearer $TOKEN" \
+  -H "Content-Type: application/json" \
+  -d '{
+    "name": "Content Creator Pro",
+    "provider": "openai",
+    "agent_type": "content_creator",
+    "model_name": "gpt-4",
+    "temperature": 0.7,
+    "mcp_enabled": true,
+    "can_search_web": true
+  }'
+
+# 2. Start AI job
+curl -X POST http://localhost:8000/v1/ai/jobs \
+  -H "Authorization: Bearer $TOKEN" \
+  -H "Content-Type: application/json" \
+  -d '{
+    "configuration_id": "config-uuid",
+    "job_type": "content_creator",
+    "input_prompt": "Create a beginner tutorial about Python async/await"
+  }'
+
+# 3. Check job status
+curl http://localhost:8000/v1/ai/jobs/{job_id} \
+  -H "Authorization: Bearer $TOKEN"
+
+# 4. Review suggestions
+curl http://localhost:8000/v1/ai/jobs/{job_id}/suggestions \
+  -H "Authorization: Bearer $TOKEN"
+
+# 5. Approve suggestion
+curl -X POST http://localhost:8000/v1/ai/suggestions/{suggestion_id}/approve \
+  -H "Authorization: Bearer $TOKEN"
+```
+
+#### **Best Practices**
+
+1. **Be Specific**: Provide detailed prompts with context and requirements
+2. **Review Thoroughly**: Always review AI-generated content for accuracy
+3. **Check Sources**: Verify all source URLs and citations
+4. **Use MCP**: Enable MCP integration to leverage existing content
+5. **Iterate**: Reject and refine suggestions until quality meets standards
+6. **Attribution**: Ensure proper attribution for sourced content
+
+#### **Security & Rate Limits**
+
+- API keys are encrypted at rest
+- Daily request limits per configuration (default: 50 requests/day)
+- All AI operations are logged for audit
+- AI cannot publish content without user approval
+- Rate limiting prevents abuse and controls costs
 
 ## **9. Operational Requirements & SLA**
 

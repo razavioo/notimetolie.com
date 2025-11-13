@@ -6,7 +6,7 @@ from starlette.middleware.base import BaseHTTPMiddleware
 from starlette.exceptions import HTTPException as StarletteHTTPException
 
 from .config import settings
-from .routers import users_router, blocks_router, paths_router, search_router, moderation_router, embed_router
+from .routers import users_router, blocks_router, paths_router, search_router, moderation_router, embed_router, progress_router
 from .routers import websocket as websocket_router
 from .services.search import ensure_index_bootstrapped
 from .events.bus import bus
@@ -67,6 +67,7 @@ app.include_router(paths_router, prefix="/v1", tags=["paths"])
 app.include_router(search_router, prefix="/v1", tags=["search"])
 app.include_router(moderation_router, prefix="/v1", tags=["moderation"])
 app.include_router(embed_router, prefix="/v1", tags=["embed"])
+app.include_router(progress_router, prefix="/v1", tags=["progress"])
 app.include_router(websocket_router.router, prefix="/v1", tags=["websocket"])
 
 

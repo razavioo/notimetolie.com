@@ -6,8 +6,8 @@ from pydantic import BaseModel
 import uuid
 
 from ..database import get_db
-from ..models import ContentNode, User, Revision, EditSuggestion, NodeLevel, EditSuggestionStatus
-from ..dependencies import get_current_active_user, require_permission
+from ..models import ContentNode, User, Revision, EditSuggestion, NodeLevel, EditSuggestionStatus, UserProgress
+from ..dependencies import get_current_active_user, require_permission, get_current_user_optional
 from ..events.bus import bus
 from ..events.events import BlockCreated, BlockUpdated, BlockDeleted
 from ..content_serializer import ContentSerializer
@@ -59,12 +59,16 @@ class BlockResponse(BaseModel):
     plain_text: Optional[str] = None
     html_content: Optional[str] = None
     is_blocknote_format: bool = False
+    
+    # Progress tracking fields
+    mastered: bool = False
+    mastered_at: Optional[str] = None
 
     class Config:
         from_attributes = True
     
     @classmethod
-    def from_content_node(cls, node: ContentNode) -> 'BlockResponse':
+    def from_content_node(cls, node: ContentNode, mastered: bool = False, mastered_at: Optional[str] = None) -> 'BlockResponse':
         """Create BlockResponse from ContentNode with BlockNote integration"""
         response = cls(
             id=str(node.id),
@@ -77,7 +81,9 @@ class BlockResponse(BaseModel):
             metadata=node.metadata,
             created_at=node.created_at.isoformat(),
             updated_at=node.updated_at.isoformat(),
-            created_by_id=str(node.created_by_id) if node.created_by_id else None
+            created_by_id=str(node.created_by_id) if node.created_by_id else None,
+            mastered=mastered,
+            mastered_at=mastered_at
         )
         
         # Add BlockNote metadata if content exists
@@ -144,8 +150,12 @@ async def get_blocks(
 
 
 @router.get("/blocks/{slug}", response_model=BlockResponse)
-async def get_block(slug: str, db: AsyncSession = Depends(get_db)):
-    """Get a specific block by slug"""
+async def get_block(
+    slug: str, 
+    db: AsyncSession = Depends(get_db),
+    current_user: Optional[User] = Depends(get_current_user_optional)
+):
+    """Get a specific block by slug with optional progress status"""
     result = await db.execute(
         select(ContentNode).where(ContentNode.slug == slug, ContentNode.level == NodeLevel.BLOCK)
     )
@@ -154,7 +164,22 @@ async def get_block(slug: str, db: AsyncSession = Depends(get_db)):
     if not block:
         raise HTTPException(status_code=404, detail="Block not found")
 
-    return BlockResponse.from_content_node(block)
+    # Check if user has mastered this block
+    mastered = False
+    mastered_at = None
+    if current_user:
+        progress_result = await db.execute(
+            select(UserProgress).where(
+                UserProgress.user_id == current_user.id,
+                UserProgress.content_node_id == block.id
+            )
+        )
+        progress = progress_result.scalar_one_or_none()
+        if progress:
+            mastered = True
+            mastered_at = progress.mastered_at.isoformat()
+
+    return BlockResponse.from_content_node(block, mastered=mastered, mastered_at=mastered_at)
 
 
 @router.post("/blocks", response_model=BlockResponse, status_code=201, dependencies=[])

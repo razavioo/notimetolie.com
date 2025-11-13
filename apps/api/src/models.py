@@ -362,3 +362,41 @@ class PathBlock(Base):
         UniqueConstraint('path_id', 'block_id', name='uq_path_block_unique'),
         Index('ix_path_blocks_path_id_position', 'path_id', 'position'),
     )
+
+
+class UserProgress(Base):
+    """Track user's mastery/checkpoint of blocks and paths"""
+    __tablename__ = "user_progress"
+
+    id = Column(GUID(), primary_key=True, default=uuid.uuid4)
+    user_id = Column(GUID(), ForeignKey("users.id"), nullable=False, index=True)
+    content_node_id = Column(GUID(), ForeignKey("content_nodes.id"), nullable=False, index=True)
+    mastered_at = Column(DateTime(timezone=True), server_default=func.now(), nullable=False)
+    # Store any additional metadata (e.g., confidence level, notes)
+    # Use a non-reserved attribute name and map to DB column 'metadata'
+    meta_json = Column("metadata", JSON, nullable=True)
+
+    # Relationships
+    user = relationship("User", backref="progress")
+    content_node = relationship("ContentNode")
+
+    __table_args__ = (
+        UniqueConstraint('user_id', 'content_node_id', name='uq_user_content_progress'),
+        Index('ix_user_progress_user_id_mastered_at', 'user_id', 'mastered_at'),
+    )
+
+    def __init__(self, **kwargs):
+        if "metadata" in kwargs:
+            kwargs["meta_json"] = kwargs.pop("metadata")
+        for k, v in kwargs.items():
+            setattr(self, k, v)
+
+    def __getattribute__(self, name):
+        if name == "metadata":
+            return object.__getattribute__(self, "meta_json")
+        return object.__getattribute__(self, name)
+
+    def __setattr__(self, name, value):
+        if name == "metadata":
+            name = "meta_json"
+        super().__setattr__(name, value)

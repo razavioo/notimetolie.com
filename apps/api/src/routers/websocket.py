@@ -9,7 +9,7 @@ import json
 
 from src.websocket.connection_manager import get_connection_manager
 from src.dependencies import get_db
-from src.models.users import User
+from src.models import User
 
 router = APIRouter(tags=["WebSocket"])
 logger = logging.getLogger(__name__)

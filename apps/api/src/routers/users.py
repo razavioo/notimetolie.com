@@ -31,6 +31,7 @@ class UserResponse(BaseModel):
     username: str
     email: str
     full_name: str | None = None
+    role: str
     is_active: bool
     is_verified: bool
     xp: int
@@ -95,6 +96,7 @@ async def register(user_data: UserCreate, db: AsyncSession = Depends(get_db)):
         username=user.username,
         email=user.email,
         full_name=user.full_name,
+        role=user.role.value,
         is_active=bool(user.is_active),
         is_verified=bool(user.is_verified),
         xp=int(user.xp),
@@ -137,6 +139,7 @@ async def read_users_me(current_user: User = Depends(get_current_active_user)):
         username=current_user.username,
         email=current_user.email,
         full_name=current_user.full_name,
+        role=current_user.role.value,
         is_active=bool(current_user.is_active),
         is_verified=bool(current_user.is_verified),
         xp=int(current_user.xp),
@@ -167,6 +170,7 @@ async def read_users(
             username=u.username,
             email=u.email,
             full_name=u.full_name,
+            role=u.role.value,
             is_active=bool(u.is_active),
             is_verified=bool(u.is_verified),
             xp=int(u.xp),
@@ -213,6 +217,7 @@ async def read_user(
             username=user.username,
             email=user.email,
             full_name=user.full_name,
+            role=user.role.value,
             is_active=bool(user.is_active),
             is_verified=bool(user.is_verified),
             xp=int(user.xp),
