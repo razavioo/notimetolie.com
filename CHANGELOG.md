@@ -2,7 +2,9 @@
 
 All notable changes to this project will be documented in this file.
 
-## [Unreleased] - 2025-11-13
+## [Unreleased]
+
+## [1.0.0] - 2025-11-13
 
 ### Added
 
@@ -157,6 +159,20 @@ All notable changes to this project will be documented in this file.
 
 ### AI Features
 9. `feat(ai): add AI agent configuration and MCP integration` - Complete AI system
+10. `feat(infrastructure): add complete AI system implementation` - Full stack implementation
+
+## [1.0.0] Release - 2025-11-13
+
+### Complete Feature Set
+
+This major release includes:
+- ✅ Full UI/UX overhaul with dark theme
+- ✅ Complete AI agent system with MCP
+- ✅ MinIO file storage integration
+- ✅ Language and tagging system
+- ✅ Background job processing
+- ✅ Encrypted API key storage
+- ✅ Docker support for all services
 
 ## Migration Notes
 
@@ -182,6 +198,31 @@ MINIO_SECURE=false
 
 ### Permissions
 New permission required: `use_ai_agents`
+
+### Dependencies
+Install new Python packages:
+```bash
+cd apps/api
+source .venv/bin/activate
+pip install -r requirements.txt
+```
+
+New dependencies:
+- minio==7.2.0 (MinIO storage)
+- aiofiles==23.2.1 (Async file operations)
+- openai==1.3.0 (OpenAI API)
+- anthropic==0.7.0 (Claude API)
+- cryptography==41.0.7 (Encryption)
+
+### Docker Services
+Start MinIO:
+```bash
+docker-compose -f docker-compose.minio.yml up -d
+```
+
+Access MinIO Console: http://localhost:9001
+- Username: minioadmin
+- Password: minioadmin
 
 ## Documentation
 - Added `docs/AI_AGENT_GUIDE.md` - Complete AI agent documentation
