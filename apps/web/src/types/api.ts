@@ -10,6 +10,8 @@ export interface BlockPublic {
   updated_at: string
   created_by_id?: string
   metadata?: Record<string, any>
+  language?: string
+  tags?: string[]
 }
 
 export interface BlockCreate {
@@ -18,6 +20,8 @@ export interface BlockCreate {
   slug: string
   block_type?: 'text' | 'image' | 'video' | 'code' | 'link' | 'embedded' | 'callout' | 'table'
   metadata?: Record<string, any>
+  language?: string
+  tags?: string[]
 }
 
 export interface BlockUpdate {
@@ -54,6 +58,8 @@ export interface PathPublic {
   updated_at: string
   created_by_id?: string
   metadata?: Record<string, any>
+  language?: string
+  tags?: string[]
 }
 
 export interface PathCreate {
@@ -61,4 +67,22 @@ export interface PathCreate {
   slug: string
   block_ids: string[]
   metadata?: Record<string, any>
+  language?: string
+  tags?: string[]
+}
+
+export interface SearchHit {
+  id: string
+  title: string
+  slug: string
+  level: string
+  snippet?: string
+}
+
+export interface SearchResponse {
+  query: string
+  limit: number
+  offset: number
+  total: number
+  hits: SearchHit[]
 }

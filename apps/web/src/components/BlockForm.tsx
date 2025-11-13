@@ -9,6 +9,8 @@ interface BlockFormData {
   slug: string
   block_type: string
   content?: Block[]
+  language?: string
+  tags?: string[]
 }
 
 interface BlockFormProps {
@@ -22,6 +24,8 @@ export function BlockForm({ onSubmit, initialData, isLoading = false }: BlockFor
   const [slug, setSlug] = useState(initialData?.slug || '')
   const [blockType, setBlockType] = useState(initialData?.block_type || 'text')
   const [content, setContent] = useState<Block[]>(initialData?.content || [])
+  const [language, setLanguage] = useState(initialData?.language || 'en')
+  const [tagsInput, setTagsInput] = useState(initialData?.tags?.join(', ') || '')
 
   const generateSlug = (text: string) => {
     return text
@@ -42,11 +46,18 @@ export function BlockForm({ onSubmit, initialData, isLoading = false }: BlockFor
     e.preventDefault()
     if (!title.trim() || !slug.trim()) return
 
+    const tags = tagsInput
+      .split(',')
+      .map(tag => tag.trim())
+      .filter(tag => tag.length > 0)
+
     await onSubmit({
       title: title.trim(),
       slug: slug.trim(),
       block_type: blockType,
-      content
+      content,
+      language,
+      tags: tags.length > 0 ? tags : undefined
     })
   }
 
@@ -84,25 +95,65 @@ export function BlockForm({ onSubmit, initialData, isLoading = false }: BlockFor
         </div>
       </div>
 
+      <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+        <div>
+          <label htmlFor="block_type" className="block text-sm font-medium mb-2">
+            Block Type
+          </label>
+          <select
+            id="block_type"
+            value={blockType}
+            onChange={(e) => setBlockType(e.target.value)}
+            className="w-full px-3 py-2 border rounded-md bg-background focus:outline-none focus:ring-2 focus:ring-primary"
+          >
+            <option value="text">Text</option>
+            <option value="image">Image</option>
+            <option value="video">Video</option>
+            <option value="code">Code</option>
+            <option value="link">Link</option>
+            <option value="embedded">Embedded</option>
+            <option value="callout">Callout</option>
+            <option value="table">Table</option>
+          </select>
+        </div>
+
+        <div>
+          <label htmlFor="language" className="block text-sm font-medium mb-2">
+            Language
+          </label>
+          <select
+            id="language"
+            value={language}
+            onChange={(e) => setLanguage(e.target.value)}
+            className="w-full px-3 py-2 border rounded-md bg-background focus:outline-none focus:ring-2 focus:ring-primary"
+          >
+            <option value="en">English</option>
+            <option value="es">Spanish</option>
+            <option value="fr">French</option>
+            <option value="de">German</option>
+            <option value="it">Italian</option>
+            <option value="pt">Portuguese</option>
+            <option value="ru">Russian</option>
+            <option value="zh">Chinese</option>
+            <option value="ja">Japanese</option>
+            <option value="ko">Korean</option>
+            <option value="ar">Arabic</option>
+          </select>
+        </div>
+      </div>
+
       <div>
-        <label htmlFor="block_type" className="block text-sm font-medium mb-2">
-          Block Type
+        <label htmlFor="tags" className="block text-sm font-medium mb-2">
+          Tags (comma-separated)
         </label>
-        <select
-          id="block_type"
-          value={blockType}
-          onChange={(e) => setBlockType(e.target.value)}
-          className="w-full px-3 py-2 border rounded-md focus:outline-none focus:ring-2 focus:ring-primary"
-        >
-          <option value="text">Text</option>
-          <option value="image">Image</option>
-          <option value="video">Video</option>
-          <option value="code">Code</option>
-          <option value="link">Link</option>
-          <option value="embedded">Embedded</option>
-          <option value="callout">Callout</option>
-          <option value="table">Table</option>
-        </select>
+        <input
+          id="tags"
+          type="text"
+          value={tagsInput}
+          onChange={(e) => setTagsInput(e.target.value)}
+          placeholder="e.g., tutorial, beginner, python"
+          className="w-full px-3 py-2 border rounded-md bg-background focus:outline-none focus:ring-2 focus:ring-primary"
+        />
       </div>
 
       <div>

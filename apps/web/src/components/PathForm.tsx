@@ -15,6 +15,9 @@ export function PathForm({ onSubmit, initialData, isLoading = false }: PathFormP
   const [slug, setSlug] = useState(initialData?.slug || '')
   const [selectedBlocks, setSelectedBlocks] = useState<string[]>(initialData?.block_ids || [])
   const [availableBlocks, setAvailableBlocks] = useState<BlockPublic[]>([])
+  const [language, setLanguage] = useState(initialData?.language || 'en')
+  const [tagsInput, setTagsInput] = useState(initialData?.tags?.join(', ') || '')
+  const [validationError, setValidationError] = useState<string | null>(null)
 
   const generateSlug = (text: string) => {
     return text
@@ -32,6 +35,19 @@ export function PathForm({ onSubmit, initialData, isLoading = false }: PathFormP
   }
 
   const handleAddBlock = (blockId: string) => {
+    const block = availableBlocks.find(b => b.id === blockId)
+    if (!block) return
+
+    // Check language consistency
+    if (selectedBlocks.length > 0) {
+      const firstSelectedBlock = availableBlocks.find(b => b.id === selectedBlocks[0])
+      if (firstSelectedBlock?.language && block.language && firstSelectedBlock.language !== block.language) {
+        setValidationError(`All blocks in a path must be in the same language. First block is in ${firstSelectedBlock.language}, but this block is in ${block.language}`)
+        return
+      }
+    }
+
+    setValidationError(null)
     setSelectedBlocks(prev => (prev.includes(blockId) ? prev : [...prev, blockId]))
   }
 
@@ -57,10 +73,30 @@ export function PathForm({ onSubmit, initialData, isLoading = false }: PathFormP
     e.preventDefault()
     if (!title.trim() || !slug.trim()) return
 
+    // Validate all blocks have same language
+    if (selectedBlocks.length > 1) {
+      const languages = new Set(
+        selectedBlocks
+          .map(id => availableBlocks.find(b => b.id === id)?.language)
+          .filter(Boolean)
+      )
+      if (languages.size > 1) {
+        setValidationError('All blocks in a path must be in the same language')
+        return
+      }
+    }
+
+    const tags = tagsInput
+      .split(',')
+      .map(tag => tag.trim())
+      .filter(tag => tag.length > 0)
+
     await onSubmit({
       title: title.trim(),
       slug: slug.trim(),
-      block_ids: selectedBlocks
+      block_ids: selectedBlocks,
+      language,
+      tags: tags.length > 0 ? tags : undefined
     })
   }
 
@@ -89,7 +125,7 @@ export function PathForm({ onSubmit, initialData, isLoading = false }: PathFormP
             value={title}
             onChange={handleTitleChange}
             placeholder="Enter path title"
-            className="w-full px-3 py-2 border rounded-md focus:outline-none focus:ring-2 focus:ring-primary"
+            className="w-full px-3 py-2 border rounded-md bg-background focus:outline-none focus:ring-2 focus:ring-primary"
             required
           />
         </div>
@@ -104,11 +140,57 @@ export function PathForm({ onSubmit, initialData, isLoading = false }: PathFormP
             value={slug}
             onChange={(e) => setSlug(e.target.value)}
             placeholder="url-friendly-slug"
-            className="w-full px-3 py-2 border rounded-md focus:outline-none focus:ring-2 focus:ring-primary"
+            className="w-full px-3 py-2 border rounded-md bg-background focus:outline-none focus:ring-2 focus:ring-primary"
             required
           />
         </div>
       </div>
+
+      <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+        <div>
+          <label htmlFor="language" className="block text-sm font-medium mb-2">
+            Language
+          </label>
+          <select
+            id="language"
+            value={language}
+            onChange={(e) => setLanguage(e.target.value)}
+            className="w-full px-3 py-2 border rounded-md bg-background focus:outline-none focus:ring-2 focus:ring-primary"
+          >
+            <option value="en">English</option>
+            <option value="es">Spanish</option>
+            <option value="fr">French</option>
+            <option value="de">German</option>
+            <option value="it">Italian</option>
+            <option value="pt">Portuguese</option>
+            <option value="ru">Russian</option>
+            <option value="zh">Chinese</option>
+            <option value="ja">Japanese</option>
+            <option value="ko">Korean</option>
+            <option value="ar">Arabic</option>
+          </select>
+        </div>
+
+        <div>
+          <label htmlFor="tags" className="block text-sm font-medium mb-2">
+            Tags (comma-separated)
+          </label>
+          <input
+            id="tags"
+            type="text"
+            value={tagsInput}
+            onChange={(e) => setTagsInput(e.target.value)}
+            placeholder="e.g., tutorial, beginner, python"
+            className="w-full px-3 py-2 border rounded-md bg-background focus:outline-none focus:ring-2 focus:ring-primary"
+          />
+        </div>
+      </div>
+
+      {validationError && (
+        <div className="p-3 bg-red-50 dark:bg-red-900/20 border border-red-200 dark:border-red-800 rounded-md text-red-600 dark:text-red-400 text-sm">
+          {validationError}
+        </div>
+      )}
 
       <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
         <div>
@@ -124,13 +206,16 @@ export function PathForm({ onSubmit, initialData, isLoading = false }: PathFormP
                   <div key={block.id} className="flex items-center justify-between gap-2">
                     <div className="min-w-0">
                       <div className="truncate text-sm">{block.title}</div>
-                      <div className="text-xs text-muted-foreground">{block.block_type}</div>
+                      <div className="text-xs text-muted-foreground">
+                        {block.block_type}
+                        {block.language && ` • ${block.language}`}
+                      </div>
                     </div>
                     <button
                       type="button"
                       onClick={() => handleAddBlock(block.id)}
                       disabled={selectedBlocks.includes(block.id)}
-                      className="text-xs border px-2 py-1 rounded disabled:opacity-50"
+                      className="text-xs border px-2 py-1 rounded disabled:opacity-50 hover:bg-accent"
                     >
                       {selectedBlocks.includes(block.id) ? 'Added' : 'Add'}
                     </button>
@@ -154,12 +239,15 @@ export function PathForm({ onSubmit, initialData, isLoading = false }: PathFormP
                     <li key={id} className="flex items-center justify-between gap-2">
                       <div className="min-w-0">
                         <div className="truncate text-sm">{b?.title || id}</div>
-                        <div className="text-xs text-muted-foreground">{b?.block_type || 'block'}</div>
+                        <div className="text-xs text-muted-foreground">
+                          {b?.block_type || 'block'}
+                          {b?.language && ` • ${b.language}`}
+                        </div>
                       </div>
                       <div className="flex items-center gap-1">
-                        <button type="button" onClick={() => moveBlock(id, 'up')} className="border px-2 py-1 rounded text-xs">↑</button>
-                        <button type="button" onClick={() => moveBlock(id, 'down')} className="border px-2 py-1 rounded text-xs">↓</button>
-                        <button type="button" onClick={() => handleRemoveBlock(id)} className="border px-2 py-1 rounded text-xs text-red-600">Remove</button>
+                        <button type="button" onClick={() => moveBlock(id, 'up')} className="border px-2 py-1 rounded text-xs hover:bg-accent">↑</button>
+                        <button type="button" onClick={() => moveBlock(id, 'down')} className="border px-2 py-1 rounded text-xs hover:bg-accent">↓</button>
+                        <button type="button" onClick={() => handleRemoveBlock(id)} className="border px-2 py-1 rounded text-xs text-red-600 hover:bg-red-50 dark:hover:bg-red-900/20">Remove</button>
                       </div>
                     </li>
                   )

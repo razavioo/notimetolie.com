@@ -6,10 +6,18 @@ import { BlockForm } from '@/components/BlockForm'
 import { BlockPublic, BlockCreate } from '@/types/api'
 import { api } from '@/lib/api'
 import { Block } from '@blocknote/core'
+import { useToast } from '@/components/ToastProvider'
+import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card'
+import { Button } from '@/components/ui/button'
+import { LoadingSpinner } from '@/components/LoadingSpinner'
+import { Plus } from 'lucide-react'
+import { useAuth } from '@/hooks/useAuth'
 
 export default function BlocksPage() {
+  const { hasPermission } = useAuth()
   const [blocks, setBlocks] = useState<BlockPublic[]>([])
   const [isLoading, setIsLoading] = useState(true)
+  const [error, setError] = useState<string | null>(null)
   const [showForm, setShowForm] = useState(false)
   const [editingBlock, setEditingBlock] = useState<BlockPublic | null>(null)
   const [isSubmitting, setIsSubmitting] = useState(false)
@@ -21,22 +29,32 @@ export default function BlocksPage() {
   const loadBlocks = async () => {
     try {
       setIsLoading(true)
+      setError(null)
       const response = await api.getBlocks()
       if (response.data) {
         setBlocks(response.data)
+      } else if (response.error) {
+        // Handle specific error cases
+        if (response.error.includes('404') || response.error.includes('not found')) {
+          setBlocks([]) // Empty list is fine, show empty state
+        } else {
+          console.error('Failed to load blocks:', response.error)
+          setError(response.error || 'Failed to load blocks')
+          setBlocks([])
+        }
       } else {
-        console.error('Failed to load blocks:', response.error)
         setBlocks([])
       }
     } catch (error) {
       console.error('Failed to load blocks:', error)
+      // Don't show error for empty data - just show empty state
       setBlocks([])
     } finally {
       setIsLoading(false)
     }
   }
 
-  const handleCreateBlock = async (data: BlockCreate & { content?: Block[] }) => {
+  const handleCreateBlock = async (data: { title: string; slug: string; block_type: string; content?: Block[]; language?: string; tags?: string[] }) => {
     try {
       setIsSubmitting(true)
 
@@ -44,10 +62,12 @@ export default function BlocksPage() {
         title: data.title,
         slug: data.slug,
         block_type: data.block_type as any,
-        content: data.content?.map(block => JSON.stringify(block)).join('\n'),
+        content: data.content ? JSON.stringify(data.content) : undefined,
         metadata: {
           blocknote_content: data.content
-        }
+        },
+        language: data.language,
+        tags: data.tags
       }
 
       const newBlockResponse = await api.createBlock(blockData)
@@ -65,7 +85,7 @@ export default function BlocksPage() {
     }
   }
 
-  const handleEditBlock = async (data: BlockCreate & { content?: Block[] }) => {
+  const handleEditBlock = async (data: { title: string; slug: string; block_type: string; content?: Block[]; language?: string; tags?: string[] }) => {
     if (!editingBlock) return
 
     try {
@@ -73,9 +93,11 @@ export default function BlocksPage() {
 
       const updateData = {
         title: data.title,
-        content: data.content?.map(block => JSON.stringify(block)).join('\n'),
+        content: data.content ? JSON.stringify(data.content) : undefined,
         metadata: {
-          blocknote_content: data.content
+          blocknote_content: data.content,
+          language: data.language,
+          tags: data.tags
         }
       }
 
@@ -100,9 +122,10 @@ export default function BlocksPage() {
     try {
       await api.deleteBlock(blockId)
       setBlocks(prev => prev.filter(b => b.id !== blockId))
+      // Success toast would be shown by the API layer
     } catch (error) {
       console.error('Failed to delete block:', error)
-      alert('Failed to delete block. Please try again.')
+      // Error handled by toast in the API layer
     }
   }
 
@@ -114,7 +137,9 @@ export default function BlocksPage() {
   if (isLoading) {
     return (
       <div className="container mx-auto px-4 py-8">
-        <div className="text-center">Loading blocks...</div>
+        <div className="flex justify-center items-center py-12">
+          <LoadingSpinner size="lg" />
+        </div>
       </div>
     )
   }
@@ -123,16 +148,34 @@ export default function BlocksPage() {
     <div className="container mx-auto px-4 py-8">
       <div className="flex justify-between items-center mb-8">
         <div>
-          <h1 className="text-3xl font-bold">Blocks</h1>
-          <p className="text-muted-foreground">Manage your knowledge blocks</p>
+          <h1 className="text-3xl font-bold">Knowledge Blocks</h1>
+          <p className="text-muted-foreground">Create, edit, and manage your knowledge blocks</p>
         </div>
-        <button
-          onClick={() => setShowForm(true)}
-          className="bg-primary text-primary-foreground px-4 py-2 rounded-md hover:bg-primary/90"
-        >
-          Create Block
-        </button>
+        <div className="flex gap-2">
+          {hasPermission('create_blocks') && (
+            <Button
+              onClick={() => setShowForm(true)}
+              className="flex items-center gap-2"
+            >
+              <Plus className="h-4 w-4" />
+              Create Block
+            </Button>
+          )}
+        </div>
       </div>
+
+      {error && (
+        <Card className="mb-6 border-red-200 bg-red-50">
+          <CardHeader>
+            <CardTitle className="text-red-800">Error Loading Blocks</CardTitle>
+          </CardHeader>
+          <CardContent>
+            <CardDescription className="text-red-600">
+              {error}
+            </CardDescription>
+          </CardContent>
+        </Card>
+      )}
 
       {(showForm || editingBlock) && (
         <div className="mb-8 p-6 border rounded-lg bg-card">
@@ -156,25 +199,33 @@ export default function BlocksPage() {
               title: editingBlock.title,
               slug: editingBlock.slug,
               block_type: editingBlock.block_type,
+              content: editingBlock.metadata?.blocknote_content,
+              language: editingBlock.language,
+              tags: editingBlock.tags
             } : undefined}
             isLoading={isSubmitting}
           />
         </div>
       )}
 
-      {blocks.length === 0 ? (
-        <div className="text-center py-12">
-          <h3 className="text-lg font-semibold mb-2">No blocks yet</h3>
-          <p className="text-muted-foreground mb-4">
-            Create your first knowledge block to get started
-          </p>
-          <button
-            onClick={() => setShowForm(true)}
-            className="bg-primary text-primary-foreground px-4 py-2 rounded-md hover:bg-primary/90"
-          >
-            Create Your First Block
-          </button>
-        </div>
+      {blocks.length === 0 && !isLoading ? (
+        <Card className="text-center py-12">
+          <CardHeader>
+            <CardTitle>Start Building Your Knowledge Base</CardTitle>
+            <CardDescription className="max-w-md mx-auto">
+              Create your first knowledge block to get started. Blocks are the foundation of your knowledge infrastructure.
+            </CardDescription>
+          </CardHeader>
+          <CardContent>
+            <Button
+              onClick={() => setShowForm(true)}
+              className="mt-4 flex items-center gap-2 mx-auto"
+            >
+              <Plus className="h-4 w-4" />
+              Create Your First Block
+            </Button>
+          </CardContent>
+        </Card>
       ) : (
         <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
           {blocks.map((block) => (
