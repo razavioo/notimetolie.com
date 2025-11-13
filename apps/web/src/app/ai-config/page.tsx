@@ -1,6 +1,6 @@
 'use client'
 
-import { useState, useEffect } from 'react'
+import { useState, useEffect, useRef } from 'react'
 import { useRouter } from 'next/navigation'
 import { Plus, Settings, Trash2, Play, X, Wifi, WifiOff } from 'lucide-react'
 import { useAuth } from '@/hooks/useAuth'
@@ -48,6 +48,7 @@ export default function AIConfigPage() {
   const [activeJobs, setActiveJobs] = useState<AIJob[]>([])
   const [jobProgress, setJobProgress] = useState<Record<string, { progress: number; message: string }>>({})
   const [accessChecked, setAccessChecked] = useState(false)
+  const hasCheckedAccess = useRef(false)
 
   // WebSocket for real-time updates (only when we have active jobs)
   const { isConnected: wsConnected } = useAIJobUpdates(
@@ -92,6 +93,11 @@ export default function AIConfigPage() {
       return
     }
     
+    // Prevent multiple checks
+    if (hasCheckedAccess.current) {
+      return
+    }
+    
     // After auth is loaded, check permissions
     if (!isAuthenticated) {
       router.push('/auth/signin')
@@ -104,10 +110,12 @@ export default function AIConfigPage() {
       return
     }
     
+    // Mark as checked
+    hasCheckedAccess.current = true
     setAccessChecked(true)
     loadConfigurations()
     loadActiveJobs()
-  }, [authLoading, isAuthenticated, hasPermission, user])
+  }, [authLoading, isAuthenticated, hasPermission, router, user])
 
   const loadConfigurations = async () => {
     try {
