@@ -4,8 +4,10 @@ AI Configuration models for agent setup and management.
 from datetime import datetime
 from sqlalchemy import Column, String, JSON, Boolean, ForeignKey, Text, Enum as SQLEnum
 from sqlalchemy.orm import relationship
-from src.models.base import Base, GUID
 import enum
+
+from .database import Base
+from .models import GUID
 
 
 class AIProvider(str, enum.Enum):

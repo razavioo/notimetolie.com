@@ -8,7 +8,7 @@ import httpx
 from sqlalchemy.ext.asyncio import AsyncSession
 from sqlalchemy import select
 
-from src.models.content import ContentNode
+from src.models import ContentNode
 
 
 class MCPClient:

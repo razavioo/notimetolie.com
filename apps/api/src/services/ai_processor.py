@@ -3,13 +3,14 @@ AI job processor for background task execution.
 """
 import asyncio
 import json
+import os
 from datetime import datetime
 from typing import Dict, Any, List, Optional
 from sqlalchemy.ext.asyncio import AsyncSession
 from sqlalchemy import select
 import uuid
 
-from src.models.ai_config import (
+from src.ai_config_models import (
     AIConfiguration,
     AIJob,
     AIBlockSuggestion,

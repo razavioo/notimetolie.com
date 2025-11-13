@@ -5,7 +5,7 @@ import os
 import base64
 from cryptography.fernet import Fernet
 from cryptography.hazmat.primitives import hashes
-from cryptography.hazmat.primitives.kdf.pbkdf2 import PBKDF2
+from cryptography.hazmat.primitives.kdf.pbkdf2 import PBKDF2HMAC
 
 
 class EncryptionService:
@@ -21,8 +21,8 @@ class EncryptionService:
         if secret_key is None:
             secret_key = os.getenv("SECRET_KEY", "default-secret-key-change-me")
         
-        # Derive a key using PBKDF2
-        kdf = PBKDF2(
+        # Derive a key using PBKDF2HMAC
+        kdf = PBKDF2HMAC(
             algorithm=hashes.SHA256(),
             length=32,
             salt=b"notimetolie-salt",  # In production, use a random salt stored securely

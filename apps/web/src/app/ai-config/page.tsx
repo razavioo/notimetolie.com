@@ -48,38 +48,42 @@ export default function AIConfigPage() {
   const [activeJobs, setActiveJobs] = useState<AIJob[]>([])
   const [jobProgress, setJobProgress] = useState<Record<string, { progress: number; message: string }>>({})
 
-  // WebSocket for real-time updates
-  const { isConnected: wsConnected } = useAIJobUpdates((update) => {
-    if (update.type === 'ai_job_update') {
-      // Update job status in real-time
-      setActiveJobs(prev => prev.map(job => 
-        job.id === update.job_id 
-          ? { ...job, status: update.status, output_data: update.data?.output_data }
-          : job
-      ))
-      
-      // Remove completed/failed/cancelled jobs after a delay
-      if (['completed', 'failed', 'cancelled'].includes(update.status)) {
-        setTimeout(() => {
-          setActiveJobs(prev => prev.filter(job => job.id !== update.job_id))
-          setJobProgress(prev => {
-            const newProgress = { ...prev }
-            delete newProgress[update.job_id]
-            return newProgress
-          })
-        }, 5000)
-      }
-    } else if (update.type === 'ai_job_progress') {
-      // Update progress
-      setJobProgress(prev => ({
-        ...prev,
-        [update.job_id]: {
-          progress: update.progress,
-          message: update.message || ''
+  // WebSocket for real-time updates (only when we have active jobs)
+  const { isConnected: wsConnected } = useAIJobUpdates(
+    activeJobs.length > 0 
+      ? (update) => {
+          if (update.type === 'ai_job_update') {
+            // Update job status in real-time
+            setActiveJobs(prev => prev.map(job => 
+              job.id === update.job_id 
+                ? { ...job, status: update.status, output_data: update.data?.output_data }
+                : job
+            ))
+            
+            // Remove completed/failed/cancelled jobs after a delay
+            if (['completed', 'failed', 'cancelled'].includes(update.status)) {
+              setTimeout(() => {
+                setActiveJobs(prev => prev.filter(job => job.id !== update.job_id))
+                setJobProgress(prev => {
+                  const newProgress = { ...prev }
+                  delete newProgress[update.job_id]
+                  return newProgress
+                })
+              }, 5000)
+            }
+          } else if (update.type === 'ai_job_progress') {
+            // Update progress
+            setJobProgress(prev => ({
+              ...prev,
+              [update.job_id]: {
+                progress: update.progress,
+                message: update.message || ''
+              }
+            }))
+          }
         }
-      }))
-    }
-  })
+      : undefined
+  )
 
   useEffect(() => {
     if (!hasPermission('use_ai_agents')) {

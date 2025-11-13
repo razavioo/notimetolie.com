@@ -52,6 +52,26 @@ async def get_current_verified_user(current_user: User = Depends(get_current_use
     return current_user
 
 
+async def get_current_user_optional(
+    credentials: HTTPAuthorizationCredentials = Depends(security),
+    db: AsyncSession = Depends(get_db)
+) -> User | None:
+    """Get current user if authenticated, otherwise return None."""
+    if not credentials or not credentials.credentials:
+        return None
+    
+    token_data = jwt_manager.verify_token(credentials.credentials)
+    if token_data is None:
+        return None
+    
+    username: str = token_data.get("sub")
+    if username is None:
+        return None
+    
+    user = await auth_manager.get_user_by_username(db, username=username)
+    return user
+
+
 def require_role(required_role: str):
     def role_checker(current_user: User = Depends(get_current_active_user)):
         try:

@@ -9,8 +9,8 @@ from pydantic import BaseModel, Field
 from datetime import datetime
 import uuid
 
-from src.dependencies import get_db, get_current_user
-from src.models.ai_config import (
+from src.dependencies import get_db, get_current_user, require_permission
+from src.ai_config_models import (
     AIConfiguration,
     AIJob,
     AIBlockSuggestion,
@@ -18,8 +18,7 @@ from src.models.ai_config import (
     AIAgentType,
     AIJobStatus,
 )
-from src.models.users import User
-from src.permissions import require_permission
+from src.models import User
 from src.utils.encryption import encrypt_api_key, decrypt_api_key
 
 router = APIRouter(prefix="/v1/ai", tags=["AI Configuration"])

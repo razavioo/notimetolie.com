@@ -74,7 +74,7 @@ export function BlockForm({ onSubmit, initialData, isLoading = false }: BlockFor
             value={title}
             onChange={handleTitleChange}
             placeholder="Enter block title"
-            className="w-full px-3 py-2 border rounded-md focus:outline-none focus:ring-2 focus:ring-primary"
+            className="w-full px-3 py-2 border border-input rounded-md bg-background text-foreground placeholder:text-muted-foreground focus:outline-none focus:ring-2 focus:ring-primary"
             required
           />
         </div>
@@ -89,7 +89,7 @@ export function BlockForm({ onSubmit, initialData, isLoading = false }: BlockFor
             value={slug}
             onChange={(e) => setSlug(e.target.value)}
             placeholder="url-friendly-slug"
-            className="w-full px-3 py-2 border rounded-md focus:outline-none focus:ring-2 focus:ring-primary"
+            className="w-full px-3 py-2 border border-input rounded-md bg-background text-foreground placeholder:text-muted-foreground focus:outline-none focus:ring-2 focus:ring-primary"
             required
           />
         </div>
@@ -104,7 +104,7 @@ export function BlockForm({ onSubmit, initialData, isLoading = false }: BlockFor
             id="block_type"
             value={blockType}
             onChange={(e) => setBlockType(e.target.value)}
-            className="w-full px-3 py-2 border rounded-md bg-background focus:outline-none focus:ring-2 focus:ring-primary"
+            className="w-full px-3 py-2 border border-input rounded-md bg-background text-foreground focus:outline-none focus:ring-2 focus:ring-primary"
           >
             <option value="text">Text</option>
             <option value="image">Image</option>
@@ -125,7 +125,7 @@ export function BlockForm({ onSubmit, initialData, isLoading = false }: BlockFor
             id="language"
             value={language}
             onChange={(e) => setLanguage(e.target.value)}
-            className="w-full px-3 py-2 border rounded-md bg-background focus:outline-none focus:ring-2 focus:ring-primary"
+            className="w-full px-3 py-2 border border-input rounded-md bg-background text-foreground focus:outline-none focus:ring-2 focus:ring-primary"
           >
             <option value="en">English</option>
             <option value="es">Spanish</option>
@@ -152,7 +152,7 @@ export function BlockForm({ onSubmit, initialData, isLoading = false }: BlockFor
           value={tagsInput}
           onChange={(e) => setTagsInput(e.target.value)}
           placeholder="e.g., tutorial, beginner, python"
-          className="w-full px-3 py-2 border rounded-md bg-background focus:outline-none focus:ring-2 focus:ring-primary"
+          className="w-full px-3 py-2 border border-input rounded-md bg-background text-foreground placeholder:text-muted-foreground focus:outline-none focus:ring-2 focus:ring-primary"
         />
       </div>
 

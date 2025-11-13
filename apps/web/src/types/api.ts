@@ -86,3 +86,74 @@ export interface SearchResponse {
   total: number
   hits: SearchHit[]
 }
+
+// AI Types
+export interface AIConfiguration {
+  id: string
+  name: string
+  description?: string
+  provider: 'openai' | 'anthropic' | 'custom'
+  agent_type: 'content_creator' | 'content_researcher' | 'content_editor' | 'course_designer'
+  model_name: string
+  temperature: number
+  max_tokens: number
+  mcp_enabled: boolean
+  is_active: boolean
+  created_at: string
+}
+
+export interface AIConfigurationCreate {
+  name: string
+  description?: string
+  provider: 'openai' | 'anthropic' | 'custom'
+  agent_type: 'content_creator' | 'content_researcher' | 'content_editor' | 'course_designer'
+  model_name: string
+  api_key?: string
+  api_endpoint?: string
+  temperature?: number
+  max_tokens?: number
+  system_prompt?: string
+  mcp_enabled?: boolean
+  mcp_server_url?: string
+  can_create_blocks?: boolean
+  can_edit_blocks?: boolean
+  can_search_web?: boolean
+  daily_request_limit?: number
+}
+
+export interface AIJob {
+  id: string
+  configuration_id: string
+  job_type: 'content_creator' | 'content_researcher' | 'content_editor' | 'course_designer'
+  status: 'pending' | 'running' | 'completed' | 'failed' | 'cancelled'
+  input_prompt: string
+  output_data?: any
+  suggested_blocks?: string[]
+  started_at?: string
+  completed_at?: string
+  error_message?: string
+  created_at: string
+}
+
+export interface AIJobCreate {
+  configuration_id: string
+  job_type: 'content_creator' | 'content_researcher' | 'content_editor' | 'course_designer'
+  input_prompt: string
+  input_metadata?: Record<string, any>
+}
+
+export interface AIBlockSuggestion {
+  id: string
+  ai_job_id: string
+  title: string
+  slug: string
+  content: string
+  block_type: string
+  language?: string
+  tags?: string[]
+  source_urls?: string[]
+  confidence_score: number
+  ai_rationale?: string
+  status: 'pending' | 'approved' | 'rejected'
+  created_at: string
+}

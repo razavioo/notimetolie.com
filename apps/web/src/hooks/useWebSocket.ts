@@ -38,13 +38,18 @@ export function useWebSocket(
 
     try {
       const token = localStorage.getItem('auth_token')
+      if (!token) {
+        // Don't connect without authentication
+        return
+      }
+      
       const wsUrl = token ? `${url}?token=${token}` : url
       
       const ws = new WebSocket(wsUrl)
       wsRef.current = ws
 
       ws.onopen = () => {
-        console.log('WebSocket connected')
+        console.log('✓ WebSocket connected')
         setIsConnected(true)
         reconnectCountRef.current = 0
         onConnect?.()
@@ -61,25 +66,36 @@ export function useWebSocket(
       }
 
       ws.onerror = (error) => {
-        console.error('WebSocket error:', error)
+        // Suppress error logging for initial connection failures
+        // This is normal when the server isn't running
+        if (reconnectCountRef.current === 0) {
+          console.warn('WebSocket connection failed (server may be offline)')
+        }
         onError?.(error)
       }
 
-      ws.onclose = () => {
+      ws.onclose = (event) => {
         console.log('WebSocket disconnected')
         setIsConnected(false)
         wsRef.current = null
         onDisconnect?.()
 
-        // Attempt reconnection
-        if (reconnectCountRef.current < reconnectAttempts) {
+        // Only attempt reconnection for non-normal closures with auth token
+        const hasToken = localStorage.getItem('auth_token')
+        const shouldReconnect = hasToken && 
+                               reconnectCountRef.current < reconnectAttempts &&
+                               event.code !== 1000 // 1000 = normal closure
+        
+        if (shouldReconnect) {
           reconnectCountRef.current++
           console.log(`Reconnecting... (${reconnectCountRef.current}/${reconnectAttempts})`)
           reconnectTimeoutRef.current = setTimeout(connect, reconnectInterval)
+        } else if (!hasToken) {
+          console.log('WebSocket closed - no auth token')
         }
       }
     } catch (error) {
-      console.error('Failed to create WebSocket connection:', error)
+      console.warn('WebSocket unavailable:', error instanceof Error ? error.message : 'Unknown error')
     }
   }, [url, onMessage, onConnect, onDisconnect, onError, reconnectInterval, reconnectAttempts])
 
@@ -146,8 +162,20 @@ export function useWebSocket(
 
 // Specific hook for AI job updates
 export function useAIJobUpdates(onJobUpdate?: (update: any) => void) {
+  const [shouldConnect, setShouldConnect] = useState(false)
+  
+  // Only attempt WebSocket connection when we have auth and are on relevant pages
+  useEffect(() => {
+    const hasToken = typeof window !== 'undefined' && localStorage.getItem('auth_token')
+    const isRelevantPage = typeof window !== 'undefined' && 
+                           (window.location.pathname.includes('/ai-config') || 
+                            window.location.pathname.includes('/blocks/create-with-ai'))
+    
+    setShouldConnect(!!hasToken && isRelevantPage)
+  }, [])
+
   const API_URL = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:8000'
-  const WS_URL = API_URL.replace('http', 'ws') + '/ws'
+  const WS_URL = shouldConnect ? API_URL.replace('http', 'ws') + '/v1/ws' : null
 
   const handleMessage = useCallback((message: WebSocketMessage) => {
     if (message.type === 'ai_job_update' || message.type === 'ai_job_progress') {
@@ -157,5 +185,6 @@ export function useAIJobUpdates(onJobUpdate?: (update: any) => void) {
 
   return useWebSocket(WS_URL, {
     onMessage: handleMessage,
+    reconnectAttempts: 3, // Reduce reconnection attempts
   })
 }

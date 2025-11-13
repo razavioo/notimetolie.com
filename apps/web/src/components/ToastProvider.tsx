@@ -68,37 +68,37 @@ function ToastContainer({ toasts, onDismiss }: ToastContainerProps) {
   const getToastIcon = (type: ToastType) => {
     switch (type) {
       case 'success':
-        return <CheckCircle className="h-5 w-5 text-green-500" />
+        return <CheckCircle className="h-5 w-5 text-green-600 dark:text-green-400" />
       case 'error':
-        return <X className="h-5 w-5 text-red-500" />
+        return <AlertCircle className="h-5 w-5 text-red-600 dark:text-red-400" />
       case 'info':
-        return <Info className="h-5 w-5 text-blue-500" />
+        return <Info className="h-5 w-5 text-blue-600 dark:text-blue-400" />
       case 'warning':
-        return <AlertTriangle className="h-5 w-5 text-yellow-500" />
+        return <AlertTriangle className="h-5 w-5 text-yellow-600 dark:text-yellow-400" />
     }
   }
 
   const getToastClasses = (type: ToastType) => {
     switch (type) {
       case 'success':
-        return 'bg-green-50 border-green-200 text-green-800'
+        return 'bg-green-50 dark:bg-green-950/30 border-green-200 dark:border-green-800 text-green-800 dark:text-green-200'
       case 'error':
-        return 'bg-red-50 border-red-200 text-red-800'
+        return 'bg-red-50 dark:bg-red-950/30 border-red-200 dark:border-red-800 text-red-800 dark:text-red-200'
       case 'info':
-        return 'bg-blue-50 border-blue-200 text-blue-800'
+        return 'bg-blue-50 dark:bg-blue-950/30 border-blue-200 dark:border-blue-800 text-blue-800 dark:text-blue-200'
       case 'warning':
-        return 'bg-yellow-50 border-yellow-200 text-yellow-800'
+        return 'bg-yellow-50 dark:bg-yellow-950/30 border-yellow-200 dark:border-yellow-800 text-yellow-800 dark:text-yellow-200'
     }
   }
 
   if (toasts.length === 0) return null
 
   return (
-    <div className="fixed top-4 right-4 z-50 space-y-2">
+    <div className="fixed top-4 right-4 z-50 space-y-3 pointer-events-none">
       {toasts.map((toast) => (
         <div
           key={toast.id}
-          className={`animate-in slide-in-from-right-96 ${getToastClasses(toast.type)} border rounded-lg p-4 shadow-lg min-w-80 max-w-md`}
+          className={`animate-in slide-in-from-right-5 fade-in duration-300 ${getToastClasses(toast.type)} border rounded-lg p-4 shadow-lg backdrop-blur-sm min-w-80 max-w-md pointer-events-auto`}
           role="alert"
         >
           <div className="flex items-start space-x-3">
@@ -111,7 +111,7 @@ function ToastContainer({ toasts, onDismiss }: ToastContainerProps) {
             </div>
             <button
               onClick={() => onDismiss(toast.id)}
-              className="ml-4 inline-flex rounded-md p-1.5 text-gray-400 hover:bg-gray-100 hover:text-gray-500 focus:outline-none focus:ring-2 focus:ring-gray-300"
+              className="ml-4 inline-flex rounded-md p-1.5 opacity-70 hover:opacity-100 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-gray-400 dark:focus:ring-gray-600 transition-opacity"
             >
               <span className="sr-only">Close</span>
               <X className="h-4 w-4" />

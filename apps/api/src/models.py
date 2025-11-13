@@ -86,6 +86,9 @@ class ContentNode(Base):
     is_locked = Column(Boolean, default=False, nullable=False)
     # Use a non-reserved attribute name and map to DB column 'metadata'
     meta_json = Column("metadata", JSON, nullable=True)
+    block_type = Column(String(50), nullable=True, default="text")
+    language = Column(String(10), nullable=True, default="en")
+    tags = Column(JSON, nullable=True)
     created_at = Column(DateTime(timezone=True), server_default=func.now(), nullable=False)
     updated_at = Column(DateTime(timezone=True), server_default=func.now(), onupdate=func.now(), nullable=False)
     created_by_id = Column(GUID(), ForeignKey("users.id"), nullable=True)
@@ -400,3 +403,4 @@ class UserProgress(Base):
         if name == "metadata":
             name = "meta_json"
         super().__setattr__(name, value)
+

@@ -75,7 +75,7 @@ export function SharePanel({ nodeType, nodeId, slug }: SharePanelProps) {
     return (
       <button
         onClick={() => setIsOpen(true)}
-        className="flex items-center gap-2 text-sm text-primary hover:underline"
+        className="flex items-center gap-2 text-sm text-muted-foreground hover:text-foreground transition-colors"
         title="Share this content"
       >
         <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
@@ -87,7 +87,8 @@ export function SharePanel({ nodeType, nodeId, slug }: SharePanelProps) {
   }
 
   return (
-    <div className="border rounded-lg p-4 bg-card space-y-4">
+    <div className="border-t border-border dark:border-gray-700 pt-6">
+      <div className="border border-gray-200 dark:border-gray-700 rounded-lg p-4 bg-card space-y-4">
       <div className="flex justify-between items-center mb-4">
         <h4 className="text-sm font-semibold">Share Options</h4>
         <button
@@ -207,6 +208,7 @@ export function SharePanel({ nodeType, nodeId, slug }: SharePanelProps) {
         <pre className="text-xs bg-background p-3 border rounded overflow-auto">
 {sdkSnippet}
         </pre>
+      </div>
       </div>
     </div>
   )

@@ -2,36 +2,183 @@
 
 import Link from 'next/link'
 import { usePathname, useRouter } from 'next/navigation'
-import { useState, useEffect } from 'react'
-import { ThemeToggle } from './ThemeToggle'
+import { useState, useEffect, useRef } from 'react'
+import { User, Settings, Sparkles, LogOut, ChevronDown, Moon, Sun } from 'lucide-react'
+import { useTheme } from 'next-themes'
 import { api } from '@/lib/api'
 import { useAuth } from '@/hooks/useAuth'
+
+interface ProfileDropdownProps {
+  user: any
+  hasPermission: (permission: string) => boolean
+  hasRole: (role: string | string[]) => boolean
+  onLogout: () => void
+}
+
+function ProfileDropdown({ user, hasPermission, hasRole, onLogout }: ProfileDropdownProps) {
+  const [isOpen, setIsOpen] = useState(false)
+  const dropdownRef = useRef<HTMLDivElement>(null)
+  const router = useRouter()
+  const { theme, setTheme } = useTheme()
+  const [mounted, setMounted] = useState(false)
+
+  // Avoid hydration mismatch for theme
+  useEffect(() => {
+    setMounted(true)
+  }, [])
+
+  // Close dropdown when clicking outside
+  useEffect(() => {
+    function handleClickOutside(event: MouseEvent) {
+      if (dropdownRef.current && !dropdownRef.current.contains(event.target as Node)) {
+        setIsOpen(false)
+      }
+    }
+
+    if (isOpen) {
+      document.addEventListener('mousedown', handleClickOutside)
+      return () => document.removeEventListener('mousedown', handleClickOutside)
+    }
+  }, [isOpen])
+
+  const handleNavigation = (path: string) => {
+    setIsOpen(false)
+    router.push(path)
+  }
+
+  const handleLogoutClick = () => {
+    setIsOpen(false)
+    onLogout()
+  }
+
+  return (
+    <div className="relative" ref={dropdownRef}>
+      {/* Profile Button */}
+      <button
+        onClick={() => setIsOpen(!isOpen)}
+        className="hidden md:flex items-center gap-2 px-3 py-2 rounded-full hover:bg-accent transition-colors"
+      >
+        <div className="w-8 h-8 rounded-full bg-primary/10 flex items-center justify-center">
+          <User className="h-4 w-4 text-primary" />
+        </div>
+        <div className="text-left">
+          <div className="text-sm font-medium">{user.username}</div>
+          {user.role && user.role !== 'builder' && (
+            <div className="text-xs text-muted-foreground capitalize">
+              {user.role.replace(/_/g, ' ')}
+            </div>
+          )}
+        </div>
+        <ChevronDown className={`h-4 w-4 transition-transform ${isOpen ? 'rotate-180' : ''}`} />
+      </button>
+
+      {/* Dropdown Menu */}
+      {isOpen && (
+        <div className="absolute right-0 mt-2 w-56 bg-background border border-border rounded-lg shadow-lg py-2 z-50">
+          {/* User Info Header */}
+          <div className="px-4 py-2 border-b border-border">
+            <div className="font-medium">{user.username}</div>
+            <div className="text-xs text-muted-foreground">{user.email}</div>
+            {user.role && (
+              <div className="mt-1">
+                <span className="text-xs px-2 py-0.5 bg-primary/10 text-primary rounded capitalize">
+                  {user.role.replace(/_/g, ' ')}
+                </span>
+              </div>
+            )}
+          </div>
+
+          {/* Menu Items */}
+          <div className="py-1">
+            <button
+              onClick={() => handleNavigation('/profile')}
+              className="w-full px-4 py-2 text-sm text-left hover:bg-accent flex items-center gap-2"
+            >
+              <User className="h-4 w-4" />
+              Profile
+            </button>
+
+            {hasPermission('use_ai_agents') && (
+              <button
+                onClick={() => handleNavigation('/ai-config')}
+                className="w-full px-4 py-2 text-sm text-left hover:bg-accent flex items-center gap-2"
+              >
+                <Sparkles className="h-4 w-4" />
+                AI Agents
+              </button>
+            )}
+
+            <button
+              onClick={() => handleNavigation('/profile/settings')}
+              className="w-full px-4 py-2 text-sm text-left hover:bg-accent flex items-center gap-2"
+            >
+              <Settings className="h-4 w-4" />
+              Settings
+            </button>
+
+            {/* Theme Toggle */}
+            {mounted && (
+              <button
+                onClick={() => setTheme(theme === 'dark' ? 'light' : 'dark')}
+                className="w-full px-4 py-2 text-sm text-left hover:bg-accent flex items-center gap-2"
+              >
+                {theme === 'dark' ? (
+                  <>
+                    <Sun className="h-4 w-4" />
+                    Light Mode
+                  </>
+                ) : (
+                  <>
+                    <Moon className="h-4 w-4" />
+                    Dark Mode
+                  </>
+                )}
+              </button>
+            )}
+          </div>
+
+          {/* Sign Out */}
+          <div className="border-t border-border pt-1">
+            <button
+              onClick={handleLogoutClick}
+              className="w-full px-4 py-2 text-sm text-left hover:bg-accent text-red-600 dark:text-red-400 flex items-center gap-2"
+            >
+              <LogOut className="h-4 w-4" />
+              Sign Out
+            </button>
+          </div>
+        </div>
+      )}
+    </div>
+  )
+}
 
 const navigation = [
   { name: 'Home', href: '/', roles: ['*'] },
   { name: 'Blocks', href: '/blocks', roles: ['*'] },
   { name: 'Paths', href: '/paths', roles: ['*'] },
   { name: 'Search', href: '/search', roles: ['*'] },
-  { name: 'API', href: '/docs', roles: ['*'] },
-  { name: 'MCP', href: '/mcp', roles: ['*'] },
-  { name: 'Moderation', href: '/moderation', roles: ['moderator', 'admin'] },
+  { name: 'Developers', href: '/developers', roles: ['*'] },
 ]
 
 export function Navigation() {
   const pathname = usePathname()
   const router = useRouter()
   const [isMenuOpen, setIsMenuOpen] = useState(false)
-  const { user, isAuthenticated, hasRole, logout } = useAuth()
+  const { user, isAuthenticated, hasRole, hasPermission, logout } = useAuth()
 
   const handleLogout = () => {
     logout()
     router.push('/')
   }
 
-  const canSeeNavItem = (item: typeof navigation[0]) => {
+  const canSeeNavItem = (item: any) => {
     if (item.roles.includes('*')) return true
     if (!isAuthenticated) return false
-    return item.roles.some(role => hasRole(role))
+    const hasRequiredRole = item.roles.some((role: string) => hasRole(role))
+    // If item has a permission requirement, check it
+    if (item.permission && !hasPermission(item.permission)) return false
+    return hasRequiredRole
   }
 
   return (
@@ -64,27 +211,14 @@ export function Navigation() {
           </div>
 
           <div className="flex items-center space-x-4">
-            {/* Auth Status */}
+            {/* Auth Status - Profile Dropdown or Sign In */}
             {isAuthenticated && user ? (
-              <div className="hidden md:flex items-center gap-3">
-                <Link
-                  href="/profile"
-                  className="text-sm text-foreground hover:text-primary font-medium flex items-center gap-1"
-                >
-                  <span>{user.username}</span>
-                  {user.role && user.role !== 'builder' && (
-                    <span className="text-xs px-1.5 py-0.5 bg-primary/10 text-primary rounded">
-                      {user.role.replace(/_/g, ' ')}
-                    </span>
-                  )}
-                </Link>
-                <button
-                  onClick={handleLogout}
-                  className="text-sm px-3 py-1.5 border border-border rounded hover:bg-accent transition-colors"
-                >
-                  Sign Out
-                </button>
-              </div>
+              <ProfileDropdown 
+                user={user} 
+                hasPermission={hasPermission}
+                hasRole={hasRole}
+                onLogout={handleLogout}
+              />
             ) : (
               <Link
                 href="/auth/signin"
@@ -93,11 +227,6 @@ export function Navigation() {
                 Sign In
               </Link>
             )}
-
-            {/* Theme Toggle */}
-            <div className="flex items-center">
-              <ThemeToggle />
-            </div>
 
             {/* Mobile Menu Button */}
             <button

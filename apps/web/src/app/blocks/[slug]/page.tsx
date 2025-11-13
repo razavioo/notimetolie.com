@@ -11,6 +11,7 @@ import { Block } from '@blocknote/core'
 import { SharePanel } from '@/components/SharePanel'
 import { RevisionHistory } from '@/components/RevisionHistory'
 import { useAuth } from '@/hooks/useAuth'
+import { useToast } from '@/components/ToastProvider'
 import { ChevronDown, ChevronRight, ArrowLeft } from 'lucide-react'
 
 export default function BlockDetailPage() {
@@ -18,6 +19,7 @@ export default function BlockDetailPage() {
   const router = useRouter()
   const slug = params.slug as string
   const { hasPermission } = useAuth()
+  const { toast } = useToast()
 
   const [block, setBlock] = useState<BlockPublic | null>(null)
   const [isLoading, setIsLoading] = useState(true)
@@ -112,7 +114,11 @@ export default function BlockDetailPage() {
       }
     } catch (error) {
       console.error('Failed to toggle mastery:', error)
-      alert('Failed to update mastery status')
+      toast({
+        type: 'error',
+        title: 'Failed to update mastery status',
+        description: 'Please try again later.'
+      })
     } finally {
       setIsMasteryLoading(false)
     }
@@ -289,10 +295,10 @@ export default function BlockDetailPage() {
                 <button
                   onClick={toggleMastery}
                   disabled={isMasteryLoading}
-                  className={`flex items-center gap-2 px-4 py-2 rounded-md font-medium transition-colors ${
+                  className={`text-sm px-3 py-1.5 rounded-md transition-colors ${
                     isMastered
-                      ? 'bg-green-600 text-white hover:bg-green-700'
-                      : 'border-2 border-green-600 text-green-600 hover:bg-green-50'
+                      ? 'text-green-700 dark:text-green-600 hover:bg-green-50 dark:hover:bg-green-950/30'
+                      : 'text-muted-foreground hover:text-green-700 dark:hover:text-green-600 hover:bg-green-50 dark:hover:bg-green-950/30'
                   } disabled:opacity-50 disabled:cursor-not-allowed`}
                 >
                   {isMasteryLoading ? (
@@ -306,7 +312,7 @@ export default function BlockDetailPage() {
                 {hasPermission('create_blocks') && (
                   <button
                     onClick={() => setIsEditing(true)}
-                    className="bg-primary text-primary-foreground px-4 py-2 rounded-md hover:bg-primary/90"
+                    className="text-sm text-muted-foreground hover:text-foreground px-3 py-1.5 rounded-md hover:bg-accent transition-colors"
                   >
                     Edit Block
                   </button>
@@ -314,7 +320,7 @@ export default function BlockDetailPage() {
                 {hasPermission('create_suggestions') && (
                   <button
                     onClick={() => setIsSuggestOpen(true)}
-                    className="border border-primary text-primary px-4 py-2 rounded-md hover:bg-primary/10"
+                    className="text-sm text-muted-foreground hover:text-foreground px-3 py-1.5 rounded-md hover:bg-accent transition-colors"
                   >
                     Suggest an Edit
                   </button>
@@ -365,9 +371,16 @@ export default function BlockDetailPage() {
 
             {pathsUsingBlock.length > 0 && (
               <div className="border-t pt-6">
-                <h3 className="text-lg font-semibold mb-4">Used in Paths</h3>
+                <h3 className="text-lg font-semibold mb-2">
+                  Used in Paths
+                  {pathsUsingBlock.length > 4 && (
+                    <span className="text-sm text-muted-foreground font-normal ml-2">
+                      (showing 4 of {pathsUsingBlock.length})
+                    </span>
+                  )}
+                </h3>
                 <div className="space-y-2">
-                  {pathsUsingBlock.map(path => (
+                  {pathsUsingBlock.slice(0, 4).map(path => (
                     <div
                       key={path.id}
                       onClick={() => router.push(`/paths/${path.slug}`)}
@@ -394,13 +407,11 @@ export default function BlockDetailPage() {
               </div>
             )}
 
-            <div className="border-t pt-6">
+            <div className="pt-6">
               <SharePanel nodeType="block" nodeId={block.id} slug={block.slug} />
             </div>
 
-            <div className="border-t pt-6">
-              <RevisionHistory blockId={block.id} />
-            </div>
+            <RevisionHistory blockId={block.id} />
 
             <div className="border-t pt-6">
               {block && <SuggestionsList key={suggestionsKey} blockId={block.id} />}

@@ -30,7 +30,8 @@ class RBACManager:
                     "create_suggestions": True,
                     "edit_own_suggestions": True,
                     "delete_own_blocks": True,
-                    "delete_own_paths": True
+                    "delete_own_paths": True,
+                    "use_ai_agents": True
                 }
             },
             "trusted_builder": {
@@ -48,7 +49,8 @@ class RBACManager:
                     "edit_others_suggestions": True,
                     "delete_own_blocks": True,
                     "delete_own_paths": True,
-                    "publish_content": True
+                    "publish_content": True,
+                    "use_ai_agents": True
                 }
             },
             "moderator": {
@@ -67,7 +69,8 @@ class RBACManager:
                     "delete_any_paths": True,
                     "publish_content": True,
                     "lock_content": True,
-                    "manage_flags": True
+                    "manage_flags": True,
+                    "use_ai_agents": True
                 }
             },
             "admin": {

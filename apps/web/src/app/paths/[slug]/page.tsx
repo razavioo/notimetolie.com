@@ -5,11 +5,13 @@ import { useParams, useRouter } from 'next/navigation'
 import { api } from '@/lib/api'
 import type { PathPublic } from '@/types/api'
 import { SharePanel } from '@/components/SharePanel'
+import { useToast } from '@/components/ToastProvider'
 import { ArrowLeft } from 'lucide-react'
 
 export default function PathDetailPage() {
   const params = useParams()
   const router = useRouter()
+  const { toast } = useToast()
   const slug = params.slug as string
 
   const [path, setPath] = useState<PathPublic | null>(null)
@@ -63,11 +65,19 @@ export default function PathDetailPage() {
       if (response.data || !response.error) {
         // Reload progress to update UI
         await loadUserProgress()
-        alert('All blocks in this path marked as mastered!')
+        toast({
+          type: 'success',
+          title: 'Path Completed!',
+          description: `All ${path.blocks?.length || 0} blocks in this path are now marked as mastered.`
+        })
       }
     } catch (error) {
       console.error('Failed to mark path as mastered:', error)
-      alert('Failed to mark path as mastered')
+      toast({
+        type: 'error',
+        title: 'Failed to mark path as mastered',
+        description: 'Please try again later.'
+      })
     } finally {
       setIsMarkingAll(false)
     }

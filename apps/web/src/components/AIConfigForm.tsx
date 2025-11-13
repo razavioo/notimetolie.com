@@ -1,7 +1,7 @@
 'use client'
 
 import { useState } from 'react'
-import { Button } from '@/components/ui/card'
+import { Button } from '@/components/ui/button'
 
 interface AIConfigFormData {
   name: string
@@ -84,7 +84,7 @@ export function AIConfigForm({ onSubmit, onCancel, initialData, isLoading = fals
             value={formData.name}
             onChange={(e) => updateField('name', e.target.value)}
             placeholder="e.g., Content Creator Pro"
-            className="w-full px-3 py-2 border rounded-md bg-background focus:outline-none focus:ring-2 focus:ring-primary"
+            className="w-full px-3 py-2 border border-input rounded-md bg-background text-foreground placeholder:text-muted-foreground focus:outline-none focus:ring-2 focus:ring-primary"
             required
           />
         </div>
@@ -99,7 +99,7 @@ export function AIConfigForm({ onSubmit, onCancel, initialData, isLoading = fals
             onChange={(e) => updateField('description', e.target.value)}
             placeholder="What will this agent be used for?"
             rows={3}
-            className="w-full px-3 py-2 border rounded-md bg-background focus:outline-none focus:ring-2 focus:ring-primary"
+            className="w-full px-3 py-2 border border-input rounded-md bg-background text-foreground placeholder:text-muted-foreground focus:outline-none focus:ring-2 focus:ring-primary"
           />
         </div>
 
@@ -116,7 +116,7 @@ export function AIConfigForm({ onSubmit, onCancel, initialData, isLoading = fals
                 updateField('model_name', e.target.value === 'openai' ? 'gpt-4' : 
                            e.target.value === 'anthropic' ? 'claude-3-sonnet-20240229' : 'custom-model')
               }}
-              className="w-full px-3 py-2 border rounded-md bg-background focus:outline-none focus:ring-2 focus:ring-primary"
+              className="w-full px-3 py-2 border border-input rounded-md bg-background text-foreground placeholder:text-muted-foreground focus:outline-none focus:ring-2 focus:ring-primary"
             >
               <option value="openai">OpenAI</option>
               <option value="anthropic">Anthropic</option>
@@ -132,7 +132,7 @@ export function AIConfigForm({ onSubmit, onCancel, initialData, isLoading = fals
               id="agent_type"
               value={formData.agent_type}
               onChange={(e) => updateField('agent_type', e.target.value)}
-              className="w-full px-3 py-2 border rounded-md bg-background focus:outline-none focus:ring-2 focus:ring-primary"
+              className="w-full px-3 py-2 border border-input rounded-md bg-background text-foreground placeholder:text-muted-foreground focus:outline-none focus:ring-2 focus:ring-primary"
             >
               <option value="content_creator">Content Creator</option>
               <option value="content_researcher">Content Researcher</option>
@@ -155,7 +155,7 @@ export function AIConfigForm({ onSubmit, onCancel, initialData, isLoading = fals
             id="model_name"
             value={formData.model_name}
             onChange={(e) => updateField('model_name', e.target.value)}
-            className="w-full px-3 py-2 border rounded-md bg-background focus:outline-none focus:ring-2 focus:ring-primary"
+            className="w-full px-3 py-2 border border-input rounded-md bg-background text-foreground placeholder:text-muted-foreground focus:outline-none focus:ring-2 focus:ring-primary"
           >
             {getModelOptions().map(model => (
               <option key={model} value={model}>{model}</option>
@@ -173,7 +173,7 @@ export function AIConfigForm({ onSubmit, onCancel, initialData, isLoading = fals
             value={formData.api_key}
             onChange={(e) => updateField('api_key', e.target.value)}
             placeholder={`${formData.provider.toUpperCase()}_API_KEY`}
-            className="w-full px-3 py-2 border rounded-md bg-background focus:outline-none focus:ring-2 focus:ring-primary"
+            className="w-full px-3 py-2 border border-input rounded-md bg-background text-foreground placeholder:text-muted-foreground focus:outline-none focus:ring-2 focus:ring-primary"
           />
           <p className="text-xs text-muted-foreground mt-1">
             Will be encrypted and stored securely
@@ -191,7 +191,7 @@ export function AIConfigForm({ onSubmit, onCancel, initialData, isLoading = fals
               value={formData.api_endpoint}
               onChange={(e) => updateField('api_endpoint', e.target.value)}
               placeholder="https://your-api.com/v1/completions"
-              className="w-full px-3 py-2 border rounded-md bg-background focus:outline-none focus:ring-2 focus:ring-primary"
+              className="w-full px-3 py-2 border border-input rounded-md bg-background text-foreground placeholder:text-muted-foreground focus:outline-none focus:ring-2 focus:ring-primary"
               required={formData.provider === 'custom'}
             />
           </div>
@@ -231,7 +231,7 @@ export function AIConfigForm({ onSubmit, onCancel, initialData, isLoading = fals
               step="100"
               value={formData.max_tokens}
               onChange={(e) => updateField('max_tokens', parseInt(e.target.value))}
-              className="w-full px-3 py-2 border rounded-md bg-background focus:outline-none focus:ring-2 focus:ring-primary"
+              className="w-full px-3 py-2 border border-input rounded-md bg-background text-foreground placeholder:text-muted-foreground focus:outline-none focus:ring-2 focus:ring-primary"
             />
           </div>
         </div>
@@ -246,7 +246,7 @@ export function AIConfigForm({ onSubmit, onCancel, initialData, isLoading = fals
             onChange={(e) => updateField('system_prompt', e.target.value)}
             placeholder="Custom instructions for the AI agent..."
             rows={4}
-            className="w-full px-3 py-2 border rounded-md bg-background focus:outline-none focus:ring-2 focus:ring-primary"
+            className="w-full px-3 py-2 border border-input rounded-md bg-background text-foreground placeholder:text-muted-foreground focus:outline-none focus:ring-2 focus:ring-primary"
           />
         </div>
       </div>
@@ -279,7 +279,7 @@ export function AIConfigForm({ onSubmit, onCancel, initialData, isLoading = fals
               value={formData.mcp_server_url}
               onChange={(e) => updateField('mcp_server_url', e.target.value)}
               placeholder="http://localhost:8000"
-              className="w-full px-3 py-2 border rounded-md bg-background focus:outline-none focus:ring-2 focus:ring-primary"
+              className="w-full px-3 py-2 border border-input rounded-md bg-background text-foreground placeholder:text-muted-foreground focus:outline-none focus:ring-2 focus:ring-primary"
             />
           </div>
         )}
@@ -341,7 +341,7 @@ export function AIConfigForm({ onSubmit, onCancel, initialData, isLoading = fals
             max="1000"
             value={formData.daily_request_limit}
             onChange={(e) => updateField('daily_request_limit', parseInt(e.target.value))}
-            className="w-full px-3 py-2 border rounded-md bg-background focus:outline-none focus:ring-2 focus:ring-primary"
+            className="w-full px-3 py-2 border border-input rounded-md bg-background text-foreground placeholder:text-muted-foreground focus:outline-none focus:ring-2 focus:ring-primary"
           />
         </div>
       </div>
