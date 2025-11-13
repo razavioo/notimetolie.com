@@ -1,5 +1,47 @@
 
 # **Project: No Time To Lie - A Living Knowledge Infrastructure**
+
+> A Living Knowledge Infrastructure for the modern world. Create, organize, and share knowledge with powerful tools designed for collaboration and discovery.
+
+---
+
+## **Quick Start**
+
+```bash
+# 1. Clone and install dependencies
+git clone <repository-url>
+cd notimetolie.com
+npm install
+
+# 2. Set up API
+cd apps/api
+python3 -m venv .venv
+source .venv/bin/activate
+pip install -r requirements.txt
+cp .env.example .env
+alembic upgrade head
+
+# 3. Start services (in separate terminals)
+# Terminal 1 - API
+cd apps/api && source .venv/bin/activate && uvicorn src.main:app --reload --host 0.0.0.0 --port 8000
+
+# Terminal 2 - Web
+cd apps/web && npm run dev
+```
+
+📍 **API:** http://localhost:8000 | **Docs:** http://localhost:8000/docs  
+📍 **Web:** http://localhost:3000
+
+### **Quick Test**
+```bash
+# Run the test script to verify everything is working
+./test_api.sh
+
+# Or test manually
+curl http://localhost:8000/v1/health    # Should return {"status":"ok"}
+curl http://localhost:8000/v1/blocks    # Should return [] (empty array)
+```
+
 ---
 
 ## **Table of Contents**
@@ -187,7 +229,22 @@ A monorepo structure will be used to manage the entire project, facilitating cod
 ├── .github/              # CI/CD workflows
 ├── apps/
 │   ├── api/              # FastAPI application
+│   │   ├── src/          # Source code
+│   │   │   ├── main.py   # FastAPI app entry point
+│   │   │   ├── routers/  # API route handlers
+│   │   │   ├── events/   # Event bus and listeners
+│   │   │   ├── models/   # Database models
+│   │   │   └── config.py # Configuration management
+│   │   ├── alembic/      # Database migrations
+│   │   ├── tests/        # API tests
+│   │   ├── .venv/        # Python virtual environment
+│   │   └── requirements.txt
 │   └── web/              # Next.js application
+│       ├── src/          # Source code
+│       │   ├── app/      # Next.js App Router pages
+│       │   ├── components/ # React components
+│       │   └── types/    # TypeScript types
+│       └── package.json
 ├── packages/
 │   ├── ui/               # Shared React components (shadcn/ui)
 │   ├── config/           # Shared configurations (ESLint, TSConfig)
@@ -197,14 +254,203 @@ A monorepo structure will be used to manage the entire project, facilitating cod
 │   └── terraform/        # Infrastructure as Code (optional)
 ├── docs/                 # Project documentation
 ├── .gitignore
-├── package.json
+├── package.json          # Root workspace configuration
 └── README.md
 ```
 
-### **8.2. Coding Standards & Conventions**
+### **8.2. Getting Started**
+
+#### **Prerequisites**
+*   Python 3.12+ (currently using 3.12.3)
+*   Node.js 18+ with npm
+*   Git
+
+#### **Installation**
+
+1. **Clone the repository:**
+   ```bash
+   git clone <repository-url>
+   cd notimetolie.com
+   ```
+
+2. **Install frontend dependencies:**
+   ```bash
+   npm install
+   ```
+
+3. **Set up the API:**
+   ```bash
+   cd apps/api
+   
+   # Create and activate virtual environment
+   python3 -m venv .venv
+   source .venv/bin/activate  # On Windows: .venv\Scripts\activate
+   
+   # Install Python dependencies
+   pip install -r requirements.txt
+   
+   # Copy environment configuration
+   cp .env.example .env
+   # Edit .env file with your configuration
+   
+   # Run database migrations
+   alembic upgrade head
+   ```
+
+4. **Set up the web app:**
+   ```bash
+   cd apps/web
+   npm install
+   ```
+
+#### **Running the Application**
+
+**Option 1: Manual (Development)**
+
+1. **Start the API server:**
+   ```bash
+   cd apps/api
+   source .venv/bin/activate
+   uvicorn src.main:app --reload --host 0.0.0.0 --port 8000
+   ```
+   API will be available at: http://localhost:8000
+   API documentation: http://localhost:8000/docs
+
+2. **Start the web app (in a new terminal):**
+   ```bash
+   cd apps/web
+   npm run dev
+   ```
+   Web app will be available at: http://localhost:3000
+
+**Option 2: Using Docker Compose**
+
+```bash
+# Build and start all services
+docker-compose up -d
+
+# View logs
+docker-compose logs -f
+
+# Stop all services
+docker-compose down
+```
+
+**Option 3: NPM Scripts (from root directory)**
+
+```bash
+# Start API server
+npm run dev:api
+
+# Start web app
+npm run dev:web
+
+# Run both with Docker
+npm run docker:up
+```
+
+#### **Available Scripts**
+
+*   `npm run dev:api` - Start the FastAPI development server
+*   `npm run dev:web` - Start the Next.js development server
+*   `npm run build` - Build all workspace applications
+*   `npm run lint` - Run ESLint across the project
+*   `npm run format` - Format code with Prettier
+*   `npm run test` - Run all tests
+*   `npm run docker:build` - Build Docker images
+*   `npm run docker:up` - Start services with Docker Compose
+*   `npm run docker:down` - Stop Docker services
+
+### **8.3. Coding Standards & Conventions**
 *   **Backend:** PEP 8, Black for formatting, isort for imports, and type hinting via Pydantic.
 *   **Frontend:** Prettier for formatting, ESLint for linting, and Conventional Commits for Git messages.
 *   **API:** Adherence to RESTful principles. All endpoints will be versioned (`/v1/...`).
+
+### **8.4. Development Workflow**
+
+#### **Database Migrations**
+
+When you modify database models, create and apply migrations:
+
+```bash
+cd apps/api
+source .venv/bin/activate
+
+# Create a new migration
+alembic revision --autogenerate -m "Description of changes"
+
+# Review the generated migration file in alembic/versions/
+
+# Apply migrations
+alembic upgrade head
+
+# Rollback last migration (if needed)
+alembic downgrade -1
+```
+
+#### **Running Tests**
+
+```bash
+# Run all API tests
+cd apps/api
+source .venv/bin/activate
+pytest tests/ -v
+
+# Run specific test file
+pytest tests/test_blocks.py -v
+
+# Run with coverage
+pytest tests/ --cov=src --cov-report=html --cov-report=term
+
+# Run tests in parallel (faster)
+pytest tests/ -n auto
+
+# Test summary:
+# ✅ 59 tests covering:
+#    - Authentication and RBAC
+#    - Blocks CRUD operations
+#    - Paths CRUD operations
+#    - Search functionality
+#    - Content serialization (BlockNote)
+#    - Event bus system
+#    - Database models
+
+# Web tests (to be implemented)
+cd apps/web
+npm test
+```
+
+#### **Code Quality Checks**
+
+```bash
+# Backend (Python)
+cd apps/api
+black src/           # Format code
+isort src/           # Sort imports
+mypy src/            # Type checking (if configured)
+
+# Frontend (JavaScript/TypeScript)
+npm run lint         # ESLint
+npm run format       # Prettier
+```
+
+### **8.5. Current Application Structure**
+
+The application is currently organized as follows:
+
+*   **API (`apps/api/src/`):**
+    *   `main.py` - FastAPI app initialization and configuration
+    *   `config.py` - Environment-based configuration with Pydantic Settings
+    *   `routers/` - API endpoint handlers (blocks, paths, search)
+    *   `events/` - Event bus implementation for service communication
+    *   `models/` - SQLAlchemy database models
+    *   `services/` - Business logic and external service integrations
+
+*   **Web (`apps/web/src/`):**
+    *   `app/` - Next.js 14 App Router pages
+    *   `components/` - Reusable React components
+    *   `types/` - TypeScript type definitions
+    *   Features: Navigation, Block Editor (BlockNote), Theme Toggle, Search
 
 ## **9. Operational Requirements & SLA**
 

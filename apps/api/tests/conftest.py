@@ -69,3 +69,27 @@ async def client(db_session):
         yield ac
 
     app.dependency_overrides.clear()
+
+
+@pytest_asyncio.fixture
+async def test_user(db_session):
+    """Create a test user"""
+    from src.models import User, UserRole
+    import uuid
+    
+    user = User(
+        id=uuid.uuid4(),
+        email="test@example.com",
+        username="testuser",
+        full_name="Test User",
+        hashed_password="$2b$12$LQv3c1yqBWVHxkd0LHAkCOYz6TtxMQJqhN8/LewY5GyYqFLyBIqLG",  # password: test123
+        role=UserRole.ADMIN,
+        is_verified=True,
+        is_active=True,
+        xp=100,
+        level=5
+    )
+    db_session.add(user)
+    await db_session.commit()
+    await db_session.refresh(user)
+    return user

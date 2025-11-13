@@ -33,7 +33,9 @@ async def search(
     limit: int = Query(10, ge=1, le=100),
     offset: int = Query(0, ge=0),
     level: Optional[str] = Query(None, pattern="^(block|path)$", description="Filter by node level"),
+    db: AsyncSession = Depends(get_db),
 ) -> SearchResponse:
+    """Search for blocks and paths. Falls back to DB search if Meilisearch is unavailable."""
     try:
         ensure_index_bootstrapped()
         client = get_client()
@@ -85,7 +87,44 @@ async def search(
             hits=hits,
         )
     except Exception as e:
-        raise HTTPException(status_code=503, detail=f"Search service error: {e}")
+        # Fallback to database search if Meilisearch is unavailable
+        from sqlalchemy import select, or_
+        from ..models import ContentNode
+        
+        query_obj = select(ContentNode).where(
+            ContentNode.is_published == True,
+            or_(
+                ContentNode.title.ilike(f"%{q}%"),
+                ContentNode.content.ilike(f"%{q}%")
+            )
+        )
+        
+        if level:
+            from ..models import NodeLevel
+            query_obj = query_obj.where(ContentNode.level == NodeLevel(level))
+        
+        query_obj = query_obj.offset(offset).limit(limit)
+        result = await db.execute(query_obj)
+        nodes = result.scalars().all()
+        
+        hits = [
+            SearchHit(
+                id=str(node.id),
+                title=node.title,
+                slug=node.slug,
+                level=node.level.value,
+                snippet=node.content[:200] if node.content else None
+            )
+            for node in nodes
+        ]
+        
+        return SearchResponse(
+            query=q,
+            limit=limit,
+            offset=offset,
+            total=len(hits),
+            hits=hits,
+        )
 
 
 @router.post("/search/reindex", status_code=status.HTTP_202_ACCEPTED)

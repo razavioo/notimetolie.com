@@ -7,6 +7,7 @@ import { useAuth } from '@/hooks/useAuth'
 import { LoadingSpinner } from '@/components/LoadingSpinner'
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card'
 import { Button } from '@/components/ui/button'
+import { AIConfigForm } from '@/components/AIConfigForm'
 
 interface AIConfig {
   id: string
@@ -271,8 +272,8 @@ export default function AIConfigPage() {
 
       {/* Create Form Modal */}
       {showCreateForm && (
-        <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-50">
-          <div className="bg-background rounded-lg max-w-2xl w-full mx-4 max-h-[90vh] overflow-y-auto">
+        <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-50 p-4">
+          <div className="bg-background rounded-lg max-w-3xl w-full max-h-[90vh] overflow-y-auto">
             <div className="p-6">
               <div className="flex justify-between items-center mb-6">
                 <h2 className="text-2xl font-bold">Create AI Agent</h2>
@@ -284,8 +285,31 @@ export default function AIConfigPage() {
                   <X className="h-5 w-5" />
                 </Button>
               </div>
-              {/* Add AIConfigForm component here */}
-              <p className="text-muted-foreground">Configuration form coming soon...</p>
+              <AIConfigForm
+                onSubmit={async (data) => {
+                  try {
+                    const response = await fetch('/api/v1/ai/configurations', {
+                      method: 'POST',
+                      headers: {
+                        'Content-Type': 'application/json',
+                        'Authorization': `Bearer ${localStorage.getItem('auth_token')}`,
+                      },
+                      body: JSON.stringify(data),
+                    })
+                    if (response.ok) {
+                      setShowCreateForm(false)
+                      loadConfigurations()
+                    } else {
+                      const error = await response.json()
+                      alert(`Error: ${error.detail || 'Failed to create agent'}`)
+                    }
+                  } catch (error) {
+                    console.error('Failed to create agent:', error)
+                    alert('Failed to create agent. Please try again.')
+                  }
+                }}
+                onCancel={() => setShowCreateForm(false)}
+              />
             </div>
           </div>
         </div>

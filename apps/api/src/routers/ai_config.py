@@ -20,6 +20,7 @@ from src.models.ai_config import (
 )
 from src.models.users import User
 from src.permissions import require_permission
+from src.utils.encryption import encrypt_api_key, decrypt_api_key
 
 router = APIRouter(prefix="/v1/ai", tags=["AI Configuration"])
 
@@ -31,6 +32,7 @@ class AIConfigCreate(BaseModel):
     provider: AIProvider
     agent_type: AIAgentType
     model_name: str = "gpt-4"
+    api_key: Optional[str] = None  # Will be encrypted
     api_endpoint: Optional[str] = None
     temperature: float = Field(default=0.7, ge=0.0, le=2.0)
     max_tokens: int = Field(default=2000, ge=1, le=100000)
@@ -112,6 +114,11 @@ async def create_ai_configuration(
     """Create a new AI agent configuration."""
     now = datetime.utcnow().isoformat()
     
+    # Encrypt API key if provided
+    encrypted_key = None
+    if config_data.api_key:
+        encrypted_key = encrypt_api_key(config_data.api_key)
+    
     config = AIConfiguration(
         id=str(uuid.uuid4()),
         user_id=current_user.id,
@@ -119,6 +126,7 @@ async def create_ai_configuration(
         description=config_data.description,
         provider=config_data.provider,
         agent_type=config_data.agent_type,
+        api_key_encrypted=encrypted_key,
         model_name=config_data.model_name,
         api_endpoint=config_data.api_endpoint,
         temperature={"value": config_data.temperature},

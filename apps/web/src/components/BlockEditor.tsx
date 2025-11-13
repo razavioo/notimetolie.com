@@ -1,10 +1,8 @@
-import { BlockNoteEditor, Block } from '@blocknote/core'
-import { BlockNoteView, useBlockNote } from '@blocknote/react'
-import '@blocknote/core/style.css'
+import { useState, useEffect } from 'react'
 
 interface BlockEditorProps {
-  initialContent?: Block[]
-  onChange?: (content: Block[]) => void
+  initialContent?: any[]
+  onChange?: (content: any[]) => void
   placeholder?: string
   editable?: boolean
 }
@@ -15,26 +13,52 @@ export function BlockEditor({
   placeholder = "Start writing...",
   editable = true
 }: BlockEditorProps) {
-  const editor: BlockNoteEditor | null = useBlockNote({
-    initialContent,
-    onEditorContentChange: (editor) => {
-      if (editable && onChange) {
-        onChange(editor.topLevelBlocks)
-      }
-    },
-  })
+  const [textContent, setTextContent] = useState('')
 
-  if (!editor) {
-    return <div className="p-4 border rounded-lg">Loading editor...</div>
+  useEffect(() => {
+    if (initialContent && initialContent.length > 0) {
+      // Convert initial content to text
+      const text = initialContent.map(block =>
+        block?.content || block?.text || ''
+      ).join('\n')
+      setTextContent(text)
+    }
+  }, [initialContent])
+
+  useEffect(() => {
+    if (onChange) {
+      // Convert text back to a simple block-like structure
+      const blocks = textContent.trim() ? [{
+        type: 'paragraph',
+        content: textContent,
+        id: 'block-1'
+      }] : []
+      onChange(blocks)
+    }
+  }, [textContent, onChange])
+
+  if (!editable) {
+    return (
+      <div className="border rounded-lg p-4 bg-gray-50">
+        <div className="prose max-w-none">
+          {textContent || <span className="text-gray-500">{placeholder}</span>}
+        </div>
+      </div>
+    )
   }
 
   return (
     <div className="border rounded-lg overflow-hidden">
-      <BlockNoteView
-        editor={editor}
-        className="min-h-[200px] p-4"
-        theme={'light'}
-        editable={editable}
+      <textarea
+        value={textContent}
+        onChange={(e) => setTextContent(e.target.value)}
+        placeholder={placeholder}
+        className="w-full min-h-[200px] p-4 border-none outline-none resize-none"
+        style={{
+          fontFamily: 'inherit',
+          fontSize: '14px',
+          lineHeight: '1.6',
+        }}
       />
     </div>
   )

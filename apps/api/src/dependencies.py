@@ -82,7 +82,7 @@ def require_min_level(min_level: int):
 
 
 def require_permission(permission: str):
-    def permission_checker(
+    async def permission_checker(
         current_user: User = Depends(get_current_active_user),
         db: AsyncSession = Depends(get_db)
     ):

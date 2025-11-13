@@ -6,9 +6,11 @@ import { PathCard } from '@/components/PathCard'
 import { PathForm } from '@/components/PathForm'
 import { PathPublic, PathCreate } from '@/types/api'
 import { api } from '@/lib/api'
+import { useAuth } from '@/hooks/useAuth'
 
 export default function PathsPage() {
   const router = useRouter()
+  const { hasPermission } = useAuth()
   const [paths, setPaths] = useState<PathPublic[]>([])
   const [isLoading, setIsLoading] = useState(true)
   const [showForm, setShowForm] = useState(false)
@@ -79,14 +81,16 @@ export default function PathsPage() {
       <div className="flex justify-between items-center mb-8">
         <div>
           <h1 className="text-3xl font-bold">Paths</h1>
-          <p className="text-muted-foreground">Manage your learning paths</p>
+          <p className="text-muted-foreground">Organize blocks into structured learning journeys</p>
         </div>
-        <button
-          onClick={() => setShowForm(true)}
-          className="bg-primary text-primary-foreground px-4 py-2 rounded-md hover:bg-primary/90"
-        >
-          Create Path
-        </button>
+        {hasPermission('create_paths') && (
+          <button
+            onClick={() => router.push('/paths/create')}
+            className="bg-primary text-primary-foreground px-4 py-2 rounded-md hover:bg-primary/90"
+          >
+            Create Path
+          </button>
+        )}
       </div>
 
       {(showForm || editingPath) && (
@@ -124,7 +128,7 @@ export default function PathsPage() {
             Create your first learning path to get started
           </p>
           <button
-            onClick={() => setShowForm(true)}
+            onClick={() => router.push('/paths/create')}
             className="bg-primary text-primary-foreground px-4 py-2 rounded-md hover:bg-primary/90"
           >
             Create Your First Path

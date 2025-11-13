@@ -91,21 +91,3 @@ class SuggestionRejected(Event):
     title: str
     rejected_by_id: Optional[uuid.UUID]
     created_by_id: Optional[uuid.UUID]
-
-
-@dataclass
-class SuggestionApproved(Event):
-    suggestion_id: uuid.UUID
-    block_id: uuid.UUID
-    title: str
-    approved_by_id: Optional[uuid.UUID]
-    created_by_id: Optional[uuid.UUID]
-
-
-@dataclass
-class SuggestionRejected(Event):
-    suggestion_id: uuid.UUID
-    block_id: uuid.UUID
-    title: str
-    rejected_by_id: Optional[uuid.UUID]
-    created_by_id: Optional[uuid.UUID]
