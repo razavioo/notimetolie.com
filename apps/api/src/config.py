@@ -31,6 +31,11 @@ class Settings(BaseSettings):
     access_token_expire_minutes: int = 30
     refresh_token_expire_days: int = 7
 
+    # Google OAuth
+    google_client_id: Optional[str] = None
+    google_client_secret: Optional[str] = None
+    google_redirect_uri: str = "http://localhost:3000/auth/google/callback"
+
     # CORS
     cors_origins: str = Field("http://localhost:3000,http://localhost:3001,http://127.0.0.1:3000", alias="CORS_ORIGINS")
 

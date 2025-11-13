@@ -2,16 +2,20 @@
 
 import { useState } from 'react'
 import { useRouter } from 'next/navigation'
-import { Sparkles, ArrowLeft } from 'lucide-react'
+import { Sparkles, ArrowLeft, Shield } from 'lucide-react'
 import { AIAssistant } from '@/components/AIAssistant'
 import { BlockForm } from '@/components/BlockForm'
 import { PageHeader } from '@/components/PageHeader'
 import { Button } from '@/components/ui/button'
+import { useAuth } from '@/hooks/useAuth'
+import { useToast } from '@/components/ToastProvider'
 import { api } from '@/lib/api'
 import { AIBlockSuggestion } from '@/types/api'
 
 export default function CreateWithAIPage() {
   const router = useRouter()
+  const { user } = useAuth()
+  const { toast } = useToast()
   const [selectedSuggestion, setSelectedSuggestion] = useState<AIBlockSuggestion | null>(null)
   const [isSubmitting, setIsSubmitting] = useState(false)
 

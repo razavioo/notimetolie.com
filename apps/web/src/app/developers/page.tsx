@@ -31,10 +31,10 @@ export default function DevelopersPage() {
               </div>
             </div>
           </CardHeader>
-          <CardContent className="space-y-4">
-            <div className="space-y-2">
+          <CardContent className="space-y-6">
+            <div className="space-y-3">
               <h4 className="font-medium text-sm">Available Endpoints</h4>
-              <ul className="text-sm text-muted-foreground space-y-1">
+              <ul className="text-sm text-muted-foreground space-y-1.5">
                 <li>• Content Management (Blocks & Paths)</li>
                 <li>• Full-text Search with Meilisearch</li>
                 <li>• Edit Suggestions & Moderation</li>
@@ -43,9 +43,9 @@ export default function DevelopersPage() {
               </ul>
             </div>
 
-            <div className="space-y-2">
+            <div className="space-y-3">
               <h4 className="font-medium text-sm">Features</h4>
-              <ul className="text-sm text-muted-foreground space-y-1">
+              <ul className="text-sm text-muted-foreground space-y-1.5">
                 <li>• OpenAPI 3.0 Specification</li>
                 <li>• Interactive Swagger UI</li>
                 <li>• Authentication with JWT</li>
@@ -54,12 +54,14 @@ export default function DevelopersPage() {
               </ul>
             </div>
 
-            <Link href="/docs">
-              <Button className="w-full flex items-center justify-center gap-2">
-                View API Docs
-                <ArrowRight className="h-4 w-4" />
-              </Button>
-            </Link>
+            <div className="pt-2">
+              <Link href="/docs">
+                <Button className="w-full flex items-center justify-center gap-2">
+                  View API Docs
+                  <ArrowRight className="h-4 w-4" />
+                </Button>
+              </Link>
+            </div>
           </CardContent>
         </Card>
 
@@ -78,10 +80,10 @@ export default function DevelopersPage() {
               </div>
             </div>
           </CardHeader>
-          <CardContent className="space-y-4">
-            <div className="space-y-2">
+          <CardContent className="space-y-6">
+            <div className="space-y-3">
               <h4 className="font-medium text-sm">MCP Capabilities</h4>
-              <ul className="text-sm text-muted-foreground space-y-1">
+              <ul className="text-sm text-muted-foreground space-y-1.5">
                 <li>• Search existing blocks before creating</li>
                 <li>• Context-aware content suggestions</li>
                 <li>• Discover related content</li>
@@ -90,9 +92,9 @@ export default function DevelopersPage() {
               </ul>
             </div>
 
-            <div className="space-y-2">
+            <div className="space-y-3">
               <h4 className="font-medium text-sm">Integration</h4>
-              <ul className="text-sm text-muted-foreground space-y-1">
+              <ul className="text-sm text-muted-foreground space-y-1.5">
                 <li>• Works with OpenAI & Anthropic</li>
                 <li>• Custom model support</li>
                 <li>• Automatic deduplication</li>
@@ -100,12 +102,14 @@ export default function DevelopersPage() {
               </ul>
             </div>
 
-            <Link href="/mcp">
-              <Button className="w-full flex items-center justify-center gap-2">
-                Learn About MCP
-                <ArrowRight className="h-4 w-4" />
-              </Button>
-            </Link>
+            <div className="pt-2">
+              <Link href="/mcp">
+                <Button className="w-full flex items-center justify-center gap-2">
+                  Learn About MCP
+                  <ArrowRight className="h-4 w-4" />
+                </Button>
+              </Link>
+            </div>
           </CardContent>
         </Card>
 
@@ -173,8 +177,8 @@ export default function DevelopersPage() {
             </CardDescription>
           </CardHeader>
           <CardContent>
-            <div className="bg-muted rounded-lg p-4 font-mono text-sm overflow-x-auto">
-              <pre>{`# 1. Create AI Configuration
+            <div className="bg-muted rounded-lg p-6 font-mono text-sm overflow-x-auto">
+              <pre className="whitespace-pre-wrap leading-relaxed">{`# 1. Create AI Configuration
 POST /v1/ai/configurations
 {
   "name": "Content Creator",

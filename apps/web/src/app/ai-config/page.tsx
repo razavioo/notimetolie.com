@@ -41,12 +41,13 @@ interface AIJob {
 
 export default function AIConfigPage() {
   const router = useRouter()
-  const { hasPermission } = useAuth()
+  const { user, isAuthenticated, isLoading: authLoading, hasPermission } = useAuth()
   const [configs, setConfigs] = useState<AIConfig[]>([])
   const [isLoading, setIsLoading] = useState(true)
   const [showCreateForm, setShowCreateForm] = useState(false)
   const [activeJobs, setActiveJobs] = useState<AIJob[]>([])
   const [jobProgress, setJobProgress] = useState<Record<string, { progress: number; message: string }>>({})
+  const [accessChecked, setAccessChecked] = useState(false)
 
   // WebSocket for real-time updates (only when we have active jobs)
   const { isConnected: wsConnected } = useAIJobUpdates(
@@ -86,13 +87,27 @@ export default function AIConfigPage() {
   )
 
   useEffect(() => {
+    // Wait for auth to finish loading
+    if (authLoading) {
+      return
+    }
+    
+    // After auth is loaded, check permissions
+    if (!isAuthenticated) {
+      router.push('/auth/signin')
+      return
+    }
+    
     if (!hasPermission('use_ai_agents')) {
+      console.log('User does not have use_ai_agents permission', { user, role: user?.role })
       router.push('/')
       return
     }
+    
+    setAccessChecked(true)
     loadConfigurations()
     loadActiveJobs()
-  }, [hasPermission])
+  }, [authLoading, isAuthenticated, hasPermission, user])
 
   const loadConfigurations = async () => {
     try {
@@ -140,7 +155,8 @@ export default function AIConfigPage() {
     return null
   }
 
-  if (isLoading) {
+  // Show loading while auth is loading, checking access, or loading data
+  if (authLoading || !accessChecked || isLoading) {
     return (
       <div className="container mx-auto px-4 py-8">
         <div className="flex justify-center items-center py-12">

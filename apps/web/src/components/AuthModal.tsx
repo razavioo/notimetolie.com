@@ -1,7 +1,10 @@
 'use client'
 
 import { useState } from 'react'
+import { GoogleOAuthProvider, GoogleLogin } from '@react-oauth/google'
 import { api } from '@/lib/api'
+
+const GOOGLE_CLIENT_ID = process.env.NEXT_PUBLIC_GOOGLE_CLIENT_ID || ''
 
 interface AuthModalProps {
   isOpen: boolean
@@ -80,31 +83,79 @@ export function AuthModal({ isOpen, onClose, onSuccess }: AuthModalProps) {
     resetForm()
   }
 
+  const handleGoogleSuccess = async (credentialResponse: any) => {
+    setError('')
+    setIsLoading(true)
+
+    try {
+      const response = await api.googleAuth(credentialResponse.credential)
+      
+      if (response.error) {
+        setError(response.error)
+        return
+      }
+
+      if (response.data) {
+        api.setToken(response.data.access_token)
+        window.location.reload()
+      }
+    } catch (err) {
+      setError('Google authentication failed')
+    } finally {
+      setIsLoading(false)
+    }
+  }
+
+  const handleGoogleError = () => {
+    setError('Google sign-in was unsuccessful')
+  }
+
   if (!isOpen) return null
 
   return (
-    <div className="fixed inset-0 z-50 flex items-center justify-center">
-      <div className="absolute inset-0 bg-black/50" onClick={onClose} />
-      <div className="relative z-50 bg-white rounded-lg shadow-xl w-full max-w-md p-6">
-        <div className="flex justify-between items-center mb-6">
-          <h2 className="text-2xl font-bold">
-            {mode === 'login' ? 'Sign In' : 'Create Account'}
-          </h2>
-          <button
-            onClick={onClose}
-            className="text-gray-400 hover:text-gray-600 text-xl"
-          >
-            ×
-          </button>
-        </div>
-
-        {error && (
-          <div className="mb-4 p-3 bg-red-50 border border-red-200 text-red-700 rounded-md text-sm">
-            {error}
+    <GoogleOAuthProvider clientId={GOOGLE_CLIENT_ID}>
+      <div className="fixed inset-0 z-50 flex items-center justify-center">
+        <div className="absolute inset-0 bg-black/50" onClick={onClose} />
+        <div className="relative z-50 bg-white rounded-lg shadow-xl w-full max-w-md p-6">
+          <div className="flex justify-between items-center mb-6">
+            <h2 className="text-2xl font-bold">
+              {mode === 'login' ? 'Sign In' : 'Create Account'}
+            </h2>
+            <button
+              onClick={onClose}
+              className="text-gray-400 hover:text-gray-600 text-xl"
+            >
+              ×
+            </button>
           </div>
-        )}
 
-        <form onSubmit={handleSubmit} className="space-y-4">
+          {error && (
+            <div className="mb-4 p-3 bg-red-50 border border-red-200 text-red-700 rounded-md text-sm">
+              {error}
+            </div>
+          )}
+
+          {GOOGLE_CLIENT_ID && (
+            <div className="mb-6">
+              <GoogleLogin
+                onSuccess={handleGoogleSuccess}
+                onError={handleGoogleError}
+                text={mode === 'login' ? 'signin_with' : 'signup_with'}
+                width="100%"
+              />
+              
+              <div className="relative my-6">
+                <div className="absolute inset-0 flex items-center">
+                  <div className="w-full border-t border-gray-300"></div>
+                </div>
+                <div className="relative flex justify-center text-sm">
+                  <span className="px-2 bg-white text-gray-500">Or continue with</span>
+                </div>
+              </div>
+            </div>
+          )}
+
+          <form onSubmit={handleSubmit} className="space-y-4">
           <div>
             <label htmlFor="username" className="block text-sm font-medium mb-1">
               Username *
@@ -187,5 +238,6 @@ export function AuthModal({ isOpen, onClose, onSuccess }: AuthModalProps) {
         </div>
       </div>
     </div>
+    </GoogleOAuthProvider>
   )
 }

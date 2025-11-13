@@ -9,6 +9,7 @@ from .config import settings
 from .routers import users_router, blocks_router, paths_router, search_router, moderation_router, embed_router, progress_router
 from .routers import websocket as websocket_router
 from .routers import ai_config as ai_router
+from .routers import auth as auth_router
 from .services.search import ensure_index_bootstrapped
 from .events.bus import bus
 from .events.listeners import search_index_listener, notification_listener
@@ -63,13 +64,14 @@ app.add_middleware(
 
 # Mount routers under versioned prefixes (limit to what tests need)
 app.include_router(users_router, prefix="/v1", tags=["users"])
+app.include_router(auth_router.router, prefix="/v1", tags=["auth"])
 app.include_router(blocks_router, prefix="/v1", tags=["blocks"])
 app.include_router(paths_router, prefix="/v1", tags=["paths"])
 app.include_router(search_router, prefix="/v1", tags=["search"])
 app.include_router(moderation_router, prefix="/v1", tags=["moderation"])
 app.include_router(embed_router, prefix="/v1", tags=["embed"])
 app.include_router(progress_router, prefix="/v1", tags=["progress"])
-app.include_router(websocket_router.router, prefix="/v1", tags=["websocket"])
+app.include_router(websocket_router.router, prefix="/v1")
 app.include_router(ai_router.router, tags=["ai"])
 
 

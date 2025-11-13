@@ -1,6 +1,7 @@
 'use client'
 
 import { useState, useEffect } from 'react'
+import { useRouter } from 'next/navigation'
 import { BlockCard } from '@/components/BlockCard'
 import { BlockForm } from '@/components/BlockForm'
 import { BlockPublic, BlockCreate } from '@/types/api'
@@ -10,12 +11,13 @@ import { useToast } from '@/components/ToastProvider'
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card'
 import { Button } from '@/components/ui/button'
 import { LoadingSpinner } from '@/components/LoadingSpinner'
-import { Plus, FileText } from 'lucide-react'
+import { Plus, FileText, Sparkles } from 'lucide-react'
 import { useAuth } from '@/hooks/useAuth'
 import { PageHeader } from '@/components/PageHeader'
 
 export default function BlocksPage() {
-  const { hasPermission } = useAuth()
+  const router = useRouter()
+  const { hasPermission, hasRole } = useAuth()
   const [blocks, setBlocks] = useState<BlockPublic[]>([])
   const [isLoading, setIsLoading] = useState(true)
   const [error, setError] = useState<string | null>(null)
@@ -152,15 +154,27 @@ export default function BlocksPage() {
         description="Create and manage reusable content blocks"
         icon={<FileText className="h-8 w-8 text-primary" />}
         actions={
-          hasPermission('create_blocks') ? (
-            <Button
-              onClick={() => setShowForm(true)}
-              className="flex items-center gap-2"
-            >
-              <Plus className="h-4 w-4" />
-              Create Block
-            </Button>
-          ) : undefined
+          <div className="flex gap-2">
+            {hasRole(['admin', 'moderator']) && (
+              <Button
+                onClick={() => router.push('/blocks/create-with-ai')}
+                variant="outline"
+                className="flex items-center gap-2 border-purple-200 dark:border-purple-800 text-purple-700 dark:text-purple-400 hover:bg-purple-50 dark:hover:bg-purple-950/30"
+              >
+                <Sparkles className="h-4 w-4" />
+                Create with AI
+              </Button>
+            )}
+            {hasPermission('create_blocks') && (
+              <Button
+                onClick={() => setShowForm(true)}
+                className="flex items-center gap-2"
+              >
+                <Plus className="h-4 w-4" />
+                Create Block
+              </Button>
+            )}
+          </div>
         }
       />
 

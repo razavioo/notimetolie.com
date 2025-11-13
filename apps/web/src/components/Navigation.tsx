@@ -19,7 +19,7 @@ function ProfileDropdown({ user, hasPermission, hasRole, onLogout }: ProfileDrop
   const [isOpen, setIsOpen] = useState(false)
   const dropdownRef = useRef<HTMLDivElement>(null)
   const router = useRouter()
-  const { theme, setTheme } = useTheme()
+  const { theme, setTheme, resolvedTheme } = useTheme()
   const [mounted, setMounted] = useState(false)
 
   // Avoid hydration mismatch for theme
@@ -109,7 +109,7 @@ function ProfileDropdown({ user, hasPermission, hasRole, onLogout }: ProfileDrop
             )}
 
             <button
-              onClick={() => handleNavigation('/profile/settings')}
+              onClick={() => handleNavigation('/settings')}
               className="w-full px-4 py-2 text-sm text-left hover:bg-accent flex items-center gap-2"
             >
               <Settings className="h-4 w-4" />
@@ -117,24 +117,28 @@ function ProfileDropdown({ user, hasPermission, hasRole, onLogout }: ProfileDrop
             </button>
 
             {/* Theme Toggle */}
-            {mounted && (
-              <button
-                onClick={() => setTheme(theme === 'dark' ? 'light' : 'dark')}
-                className="w-full px-4 py-2 text-sm text-left hover:bg-accent flex items-center gap-2"
-              >
-                {theme === 'dark' ? (
-                  <>
-                    <Sun className="h-4 w-4" />
-                    Light Mode
-                  </>
-                ) : (
-                  <>
-                    <Moon className="h-4 w-4" />
-                    Dark Mode
-                  </>
-                )}
-              </button>
-            )}
+            <button
+              onClick={() => setTheme(resolvedTheme === 'dark' ? 'light' : 'dark')}
+              disabled={!mounted}
+              className="w-full px-4 py-2 text-sm text-left hover:bg-accent flex items-center gap-2 disabled:opacity-50"
+            >
+              {!mounted ? (
+                <>
+                  <Moon className="h-4 w-4" />
+                  Theme
+                </>
+              ) : resolvedTheme === 'dark' ? (
+                <>
+                  <Sun className="h-4 w-4" />
+                  Light Mode
+                </>
+              ) : (
+                <>
+                  <Moon className="h-4 w-4" />
+                  Dark Mode
+                </>
+              )}
+            </button>
           </div>
 
           {/* Sign Out */}
@@ -154,7 +158,6 @@ function ProfileDropdown({ user, hasPermission, hasRole, onLogout }: ProfileDrop
 }
 
 const navigation = [
-  { name: 'Home', href: '/', roles: ['*'] },
   { name: 'Blocks', href: '/blocks', roles: ['*'] },
   { name: 'Paths', href: '/paths', roles: ['*'] },
   { name: 'Search', href: '/search', roles: ['*'] },
@@ -165,7 +168,13 @@ export function Navigation() {
   const pathname = usePathname()
   const router = useRouter()
   const [isMenuOpen, setIsMenuOpen] = useState(false)
+  const [mounted, setMounted] = useState(false)
   const { user, isAuthenticated, hasRole, hasPermission, logout } = useAuth()
+
+  // Avoid hydration mismatch by only filtering navigation after mount
+  useEffect(() => {
+    setMounted(true)
+  }, [])
 
   const handleLogout = () => {
     logout()
@@ -181,6 +190,9 @@ export function Navigation() {
     return hasRequiredRole
   }
 
+  // Show all navigation items on server/initial render to avoid hydration mismatch
+  const visibleNavItems = mounted ? navigation.filter(canSeeNavItem) : navigation
+
   return (
     <nav className="border-b bg-background/95 backdrop-blur supports-[backdrop-filter]:bg-background/60">
       <div className="container mx-auto px-4">
@@ -194,7 +206,7 @@ export function Navigation() {
 
             {/* Desktop Navigation */}
             <div className="hidden md:flex space-x-6">
-              {navigation.filter(canSeeNavItem).map((item) => (
+              {visibleNavItems.map((item) => (
                 <Link
                   key={item.name}
                   href={item.href}
@@ -264,7 +276,7 @@ export function Navigation() {
         {isMenuOpen && (
           <div className="md:hidden border-t bg-background">
             <div className="px-2 pt-2 pb-3 space-y-1">
-              {navigation.filter(canSeeNavItem).map((item) => (
+              {visibleNavItems.map((item) => (
                 <Link
                   key={item.name}
                   href={item.href}
