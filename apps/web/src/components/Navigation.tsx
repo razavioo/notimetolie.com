@@ -1,20 +1,37 @@
 'use client'
 
 import Link from 'next/link'
-import { usePathname } from 'next/navigation'
-import { useState } from 'react'
+import { usePathname, useRouter } from 'next/navigation'
+import { useState, useEffect } from 'react'
+import { ThemeToggle } from './ThemeToggle'
+import { api } from '@/lib/api'
+import { useAuth } from '@/hooks/useAuth'
 
 const navigation = [
-  { name: 'Home', href: '/' },
-  { name: 'Blocks', href: '/blocks' },
-  { name: 'Paths', href: '/paths' },
-  { name: 'API Docs', href: '/docs' },
-  { name: 'Moderation', href: '/moderation' },
+  { name: 'Home', href: '/', roles: ['*'] },
+  { name: 'Blocks', href: '/blocks', roles: ['*'] },
+  { name: 'Paths', href: '/paths', roles: ['*'] },
+  { name: 'Search', href: '/search', roles: ['*'] },
+  { name: 'API Docs', href: '/docs', roles: ['*'] },
+  { name: 'Moderation', href: '/moderation', roles: ['moderator', 'admin'] },
 ]
 
 export function Navigation() {
   const pathname = usePathname()
+  const router = useRouter()
   const [isMenuOpen, setIsMenuOpen] = useState(false)
+  const { user, isAuthenticated, hasRole, logout } = useAuth()
+
+  const handleLogout = () => {
+    logout()
+    router.push('/')
+  }
+
+  const canSeeNavItem = (item: typeof navigation[0]) => {
+    if (item.roles.includes('*')) return true
+    if (!isAuthenticated) return false
+    return item.roles.some(role => hasRole(role))
+  }
 
   return (
     <nav className="border-b bg-background/95 backdrop-blur supports-[backdrop-filter]:bg-background/60">
@@ -29,7 +46,7 @@ export function Navigation() {
 
             {/* Desktop Navigation */}
             <div className="hidden md:flex space-x-6">
-              {navigation.map((item) => (
+              {navigation.filter(canSeeNavItem).map((item) => (
                 <Link
                   key={item.name}
                   href={item.href}
@@ -46,20 +63,46 @@ export function Navigation() {
           </div>
 
           <div className="flex items-center space-x-4">
-            {/* Desktop CTA */}
-            <div className="hidden md:block">
+            {/* Auth Status */}
+            {isAuthenticated && user ? (
+              <div className="hidden md:flex items-center gap-3">
+                <Link
+                  href="/profile"
+                  className="text-sm text-foreground hover:text-primary font-medium flex items-center gap-1"
+                >
+                  <span>{user.username}</span>
+                  {user.role !== 'builder' && (
+                    <span className="text-xs px-1.5 py-0.5 bg-primary/10 text-primary rounded">
+                      {user.role.replace('_', ' ')}
+                    </span>
+                  )}
+                </Link>
+                <button
+                  onClick={handleLogout}
+                  className="text-sm px-3 py-1.5 border border-border rounded hover:bg-accent transition-colors"
+                >
+                  Sign Out
+                </button>
+              </div>
+            ) : (
               <Link
-                href="/blocks"
-                className="bg-primary text-primary-foreground px-4 py-2 rounded-md text-sm font-medium hover:bg-primary/90 transition-colors duration-200 shadow-sm hover:shadow-md"
+                href="/auth/signin"
+                className="hidden md:block text-sm px-4 py-2 border border-primary text-primary rounded hover:bg-primary hover:text-primary-foreground transition-colors font-medium"
               >
-                Create Block
+                Sign In
               </Link>
+            )}
+
+            {/* Theme Toggle */}
+            <div className="flex items-center">
+              <ThemeToggle />
             </div>
 
             {/* Mobile Menu Button */}
             <button
               onClick={() => setIsMenuOpen(!isMenuOpen)}
               className="md:hidden p-2 rounded-md text-muted-foreground hover:text-foreground hover:bg-gray-100 transition-colors"
+              aria-label="Toggle navigation menu"
             >
               <svg
                 className="h-6 w-6"
@@ -91,7 +134,7 @@ export function Navigation() {
         {isMenuOpen && (
           <div className="md:hidden border-t bg-background">
             <div className="px-2 pt-2 pb-3 space-y-1">
-              {navigation.map((item) => (
+              {navigation.filter(canSeeNavItem).map((item) => (
                 <Link
                   key={item.name}
                   href={item.href}
@@ -105,14 +148,39 @@ export function Navigation() {
                   {item.name}
                 </Link>
               ))}
-              <div className="px-3 py-2">
-                <Link
-                  href="/blocks"
-                  onClick={() => setIsMenuOpen(false)}
-                  className="bg-primary text-primary-foreground px-4 py-2 rounded-md text-sm font-medium hover:bg-primary/90 transition-colors duration-200 block text-center"
-                >
-                  Create Block
-                </Link>
+
+              {/* Mobile Auth */}
+              {isAuthenticated && user ? (
+                <div className="px-3 py-2 border-t space-y-2">
+                  <Link
+                    href="/profile"
+                    onClick={() => setIsMenuOpen(false)}
+                    className="block px-3 py-2 rounded-md text-base font-medium text-foreground hover:bg-gray-100"
+                  >
+                    {user.username}
+                    {user.role !== 'builder' && (
+                      <span className="ml-2 text-xs px-1.5 py-0.5 bg-primary/10 text-primary rounded">
+                        {user.role.replace('_', ' ')}
+                      </span>
+                    )}
+                  </Link>
+                  <button
+                    onClick={() => {
+                      handleLogout()
+                      setIsMenuOpen(false)
+                    }}
+                    className="block w-full text-left px-3 py-2 rounded-md text-base font-medium text-foreground hover:bg-gray-100"
+                  >
+                    Sign Out
+                  </button>
+                </div>
+              ) : null}
+
+              {/* Mobile Theme Toggle */}
+              <div className="px-3 py-2 border-t">
+                <div className="flex justify-center">
+                  <ThemeToggle />
+                </div>
               </div>
             </div>
           </div>
