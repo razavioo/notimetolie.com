@@ -2,12 +2,13 @@
 
 import { useState, useEffect } from 'react'
 import { useRouter } from 'next/navigation'
-import { Plus, Settings, Trash2, Play, X } from 'lucide-react'
+import { Plus, Settings, Trash2, Play, X, Wifi, WifiOff } from 'lucide-react'
 import { useAuth } from '@/hooks/useAuth'
 import { LoadingSpinner } from '@/components/LoadingSpinner'
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card'
 import { Button } from '@/components/ui/button'
 import { AIConfigForm } from '@/components/AIConfigForm'
+import { useAIJobUpdates } from '@/hooks/useWebSocket'
 
 interface AIConfig {
   id: string
@@ -44,6 +45,40 @@ export default function AIConfigPage() {
   const [isLoading, setIsLoading] = useState(true)
   const [showCreateForm, setShowCreateForm] = useState(false)
   const [activeJobs, setActiveJobs] = useState<AIJob[]>([])
+  const [jobProgress, setJobProgress] = useState<Record<string, { progress: number; message: string }>>({})
+
+  // WebSocket for real-time updates
+  const { isConnected: wsConnected } = useAIJobUpdates((update) => {
+    if (update.type === 'ai_job_update') {
+      // Update job status in real-time
+      setActiveJobs(prev => prev.map(job => 
+        job.id === update.job_id 
+          ? { ...job, status: update.status, output_data: update.data?.output_data }
+          : job
+      ))
+      
+      // Remove completed/failed/cancelled jobs after a delay
+      if (['completed', 'failed', 'cancelled'].includes(update.status)) {
+        setTimeout(() => {
+          setActiveJobs(prev => prev.filter(job => job.id !== update.job_id))
+          setJobProgress(prev => {
+            const newProgress = { ...prev }
+            delete newProgress[update.job_id]
+            return newProgress
+          })
+        }, 5000)
+      }
+    } else if (update.type === 'ai_job_progress') {
+      // Update progress
+      setJobProgress(prev => ({
+        ...prev,
+        [update.job_id]: {
+          progress: update.progress,
+          message: update.message || ''
+        }
+      }))
+    }
+  })
 
   useEffect(() => {
     if (!hasPermission('use_ai_agents')) {
@@ -114,7 +149,20 @@ export default function AIConfigPage() {
     <div className="container mx-auto px-4 py-8">
       <div className="flex justify-between items-center mb-8">
         <div>
-          <h1 className="text-3xl font-bold">AI Agent Configuration</h1>
+          <h1 className="text-3xl font-bold flex items-center gap-3">
+            AI Agent Configuration
+            {wsConnected ? (
+              <span className="flex items-center gap-1 text-sm font-normal text-green-600 dark:text-green-400">
+                <Wifi className="h-4 w-4" />
+                Live
+              </span>
+            ) : (
+              <span className="flex items-center gap-1 text-sm font-normal text-gray-500">
+                <WifiOff className="h-4 w-4" />
+                Offline
+              </span>
+            )}
+          </h1>
           <p className="text-muted-foreground mt-2">
             Configure and manage your AI assistants for content creation
           </p>
@@ -137,41 +185,64 @@ export default function AIConfigPage() {
           </CardHeader>
           <CardContent>
             <div className="space-y-3">
-              {activeJobs.map((job) => (
-                <div key={job.id} className="flex items-center justify-between p-3 border rounded-lg">
-                  <div className="flex-1">
-                    <p className="font-medium">{job.job_type}</p>
-                    <p className="text-sm text-muted-foreground line-clamp-1">
-                      {job.input_prompt}
-                    </p>
-                    <div className="flex items-center gap-2 mt-1">
-                      <span className={`text-xs px-2 py-0.5 rounded ${
-                        job.status === 'running' ? 'bg-blue-100 text-blue-800 dark:bg-blue-900/30 dark:text-blue-300' :
-                        job.status === 'pending' ? 'bg-yellow-100 text-yellow-800 dark:bg-yellow-900/30 dark:text-yellow-300' :
-                        'bg-gray-100 text-gray-800 dark:bg-gray-800 dark:text-gray-300'
-                      }`}>
-                        {job.status}
-                      </span>
-                      {job.started_at && (
-                        <span className="text-xs text-muted-foreground">
-                          Started {new Date(job.started_at).toLocaleTimeString()}
-                        </span>
+              {activeJobs.map((job) => {
+                const progress = jobProgress[job.id]
+                return (
+                  <div key={job.id} className="p-3 border rounded-lg space-y-2">
+                    <div className="flex items-center justify-between">
+                      <div className="flex-1">
+                        <p className="font-medium">{job.job_type}</p>
+                        <p className="text-sm text-muted-foreground line-clamp-1">
+                          {job.input_prompt}
+                        </p>
+                        <div className="flex items-center gap-2 mt-1">
+                          <span className={`text-xs px-2 py-0.5 rounded ${
+                            job.status === 'running' ? 'bg-blue-100 text-blue-800 dark:bg-blue-900/30 dark:text-blue-300' :
+                            job.status === 'pending' ? 'bg-yellow-100 text-yellow-800 dark:bg-yellow-900/30 dark:text-yellow-300' :
+                            job.status === 'completed' ? 'bg-green-100 text-green-800 dark:bg-green-900/30 dark:text-green-300' :
+                            job.status === 'failed' ? 'bg-red-100 text-red-800 dark:bg-red-900/30 dark:text-red-300' :
+                            'bg-gray-100 text-gray-800 dark:bg-gray-800 dark:text-gray-300'
+                          }`}>
+                            {job.status}
+                          </span>
+                          {job.started_at && (
+                            <span className="text-xs text-muted-foreground">
+                              Started {new Date(job.started_at).toLocaleTimeString()}
+                            </span>
+                          )}
+                        </div>
+                      </div>
+                      {job.status === 'running' && (
+                        <Button
+                          variant="outline"
+                          size="sm"
+                          onClick={() => {/* Cancel job */}}
+                          className="flex items-center gap-1"
+                        >
+                          <X className="h-3 w-3" />
+                          Cancel
+                        </Button>
                       )}
                     </div>
+                    
+                    {/* Progress bar */}
+                    {progress && job.status === 'running' && (
+                      <div className="space-y-1">
+                        <div className="flex justify-between text-xs text-muted-foreground">
+                          <span>{progress.message}</span>
+                          <span>{Math.round(progress.progress)}%</span>
+                        </div>
+                        <div className="w-full bg-gray-200 dark:bg-gray-700 rounded-full h-2">
+                          <div
+                            className="bg-blue-600 h-2 rounded-full transition-all duration-300"
+                            style={{ width: `${progress.progress}%` }}
+                          />
+                        </div>
+                      </div>
+                    )}
                   </div>
-                  {job.status === 'running' && (
-                    <Button
-                      variant="outline"
-                      size="sm"
-                      onClick={() => {/* Cancel job */}}
-                      className="flex items-center gap-1"
-                    >
-                      <X className="h-3 w-3" />
-                      Cancel
-                    </Button>
-                  )}
-                </div>
-              ))}
+                )
+              })}
             </div>
           </CardContent>
         </Card>

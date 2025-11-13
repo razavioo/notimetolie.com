@@ -19,6 +19,7 @@ from src.services.ai_providers import create_ai_provider
 from src.services.mcp_client import get_mcp_client
 from src.services.storage import get_storage_service
 from src.utils.encryption import decrypt_api_key
+from src.websocket.connection_manager import get_connection_manager
 
 
 class AIJobProcessor:
@@ -28,6 +29,7 @@ class AIJobProcessor:
         self.db = db
         self.mcp_client = None
         self.storage = get_storage_service()
+        self.ws_manager = get_connection_manager()
     
     async def process_job(self, job_id: str, config_id: str) -> None:
         """
@@ -64,6 +66,14 @@ class AIJobProcessor:
             job.started_at = {"iso": datetime.utcnow().isoformat()}
             await self.db.commit()
             
+            # Send WebSocket update
+            await self.ws_manager.send_ai_job_update(
+                job.user_id,
+                job.id,
+                AIJobStatus.RUNNING.value,
+                {"message": "Job started"}
+            )
+            
             # Process based on job type
             if job.job_type == "content_creator":
                 await self._process_content_creator(job, config)
@@ -78,10 +88,32 @@ class AIJobProcessor:
             job.status = AIJobStatus.COMPLETED
             job.completed_at = {"iso": datetime.utcnow().isoformat()}
             
+            # Send completion update
+            await self.ws_manager.send_ai_job_update(
+                job.user_id,
+                job.id,
+                AIJobStatus.COMPLETED.value,
+                {
+                    "message": "Job completed successfully",
+                    "output_data": job.output_data
+                }
+            )
+            
         except Exception as e:
             job.status = AIJobStatus.FAILED
             job.error_message = str(e)
             print(f"Error processing job {job_id}: {e}")
+            
+            # Send failure update
+            await self.ws_manager.send_ai_job_update(
+                job.user_id,
+                job.id,
+                AIJobStatus.FAILED.value,
+                {
+                    "message": "Job failed",
+                    "error": str(e)
+                }
+            )
         
         finally:
             job.updated_at = {"iso": datetime.utcnow().isoformat()}
@@ -96,11 +128,27 @@ class AIJobProcessor:
         # Initialize MCP client
         self.mcp_client = await get_mcp_client()
         
+        # Send progress update
+        await self.ws_manager.send_ai_job_progress(
+            job.user_id,
+            job.id,
+            10.0,
+            "Searching existing blocks via MCP..."
+        )
+        
         # Search existing blocks first via MCP
         existing_blocks = await self.mcp_client.search_existing_blocks(
             job.input_prompt,
             self.db,
             limit=5
+        )
+        
+        # Send progress update
+        await self.ws_manager.send_ai_job_progress(
+            job.user_id,
+            job.id,
+            30.0,
+            f"Found {len(existing_blocks)} related blocks"
         )
         
         # Create AI provider (decrypt API key)
@@ -126,12 +174,28 @@ Existing relevant blocks found:
 
 Based on these existing blocks, create new, non-duplicate content."""
         
+        # Send progress update
+        await self.ws_manager.send_ai_job_progress(
+            job.user_id,
+            job.id,
+            50.0,
+            "Generating content with AI..."
+        )
+        
         # Generate content
         result = await provider.generate(
             context,
             system_prompt=system_prompt,
             temperature=config.temperature.get("value", 0.7),
             max_tokens=config.max_tokens.get("value", 2000)
+        )
+        
+        # Send progress update
+        await self.ws_manager.send_ai_job_progress(
+            job.user_id,
+            job.id,
+            80.0,
+            "Creating suggestion..."
         )
         
         # Update job with results
