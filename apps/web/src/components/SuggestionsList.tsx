@@ -36,9 +36,13 @@ export function SuggestionsList({ blockId }: SuggestionsListProps) {
     try {
       setIsSubmitting(true)
       const response = await api.createSuggestion(blockId, data)
-      if (response.data) {
+      if (response.error) {
+        console.error('Failed to create suggestion:', response.error)
+        alert(`Failed to create suggestion: ${response.error}`)
+      } else if (response.data) {
         setSuggestions(prev => [response.data!, ...prev])
         setShowForm(false)
+        alert('✅ Suggestion created successfully! It will be reviewed by moderators.')
       }
     } catch (error) {
       console.error('Failed to create suggestion:', error)

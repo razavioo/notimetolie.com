@@ -22,9 +22,10 @@ export function RevisionHistory({ blockId }: RevisionHistoryProps) {
   const [isLoading, setIsLoading] = useState(true)
   const [isOpen, setIsOpen] = useState(false)
   const [selectedRevision, setSelectedRevision] = useState<Revision | null>(null)
+  const [hasLoaded, setHasLoaded] = useState(false)
 
   useEffect(() => {
-    if (isOpen) {
+    if (isOpen && !hasLoaded) {
       loadRevisions()
     }
   }, [isOpen, blockId])
@@ -40,6 +41,7 @@ export function RevisionHistory({ blockId }: RevisionHistoryProps) {
       console.error('Failed to load revisions:', error)
     } finally {
       setIsLoading(false)
+      setHasLoaded(true)
     }
   }
 
@@ -54,6 +56,30 @@ export function RevisionHistory({ blockId }: RevisionHistoryProps) {
     })
   }
 
+  // Load count initially without showing content
+  useEffect(() => {
+    if (!hasLoaded) {
+      const loadCount = async () => {
+        try {
+          const response = await api.getBlockRevisions(blockId)
+          if (response.data) {
+            setRevisions(response.data)
+          }
+        } catch (error) {
+          console.error('Failed to load revision count:', error)
+        } finally {
+          setHasLoaded(true)
+        }
+      }
+      loadCount()
+    }
+  }, [blockId])
+
+  // Don't show button if no revisions exist
+  if (hasLoaded && revisions.length === 0) {
+    return null
+  }
+
   if (!isOpen) {
     return (
       <button
@@ -61,7 +87,7 @@ export function RevisionHistory({ blockId }: RevisionHistoryProps) {
         className="flex items-center gap-2 text-sm text-muted-foreground hover:text-foreground transition-colors"
       >
         <Clock className="h-4 w-4" />
-        View History ({revisions.length || '...'})
+        View History ({hasLoaded ? revisions.length : '...'})
       </button>
     )
   }
