@@ -71,9 +71,9 @@ export function Navigation() {
                   className="text-sm text-foreground hover:text-primary font-medium flex items-center gap-1"
                 >
                   <span>{user.username}</span>
-                  {user.role !== 'builder' && (
+                  {user.role && user.role !== 'builder' && (
                     <span className="text-xs px-1.5 py-0.5 bg-primary/10 text-primary rounded">
-                      {user.role.replace('_', ' ')}
+                      {user.role.replace(/_/g, ' ')}
                     </span>
                   )}
                 </Link>
@@ -158,9 +158,9 @@ export function Navigation() {
                     className="block px-3 py-2 rounded-md text-base font-medium text-foreground hover:bg-gray-100"
                   >
                     {user.username}
-                    {user.role !== 'builder' && (
+                    {user.role && user.role !== 'builder' && (
                       <span className="ml-2 text-xs px-1.5 py-0.5 bg-primary/10 text-primary rounded">
-                        {user.role.replace('_', ' ')}
+                        {user.role.replace(/_/g, ' ')}
                       </span>
                     )}
                   </Link>

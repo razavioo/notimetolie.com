@@ -43,8 +43,8 @@ export function AuthModal({ isOpen, onClose, onSuccess }: AuthModalProps) {
         const loginResponse = await api.login(username, password)
         if (loginResponse.data) {
           api.setToken(loginResponse.data.access_token)
-          onSuccess?.()
-          onClose()
+          // Force page reload to update auth state
+          window.location.reload()
         }
       } else {
         const response = await api.login(username, password)
@@ -56,8 +56,8 @@ export function AuthModal({ isOpen, onClose, onSuccess }: AuthModalProps) {
 
         if (response.data) {
           api.setToken(response.data.access_token)
-          onSuccess?.()
-          onClose()
+          // Force page reload to update auth state
+          window.location.reload()
         }
       }
     } catch (err) {

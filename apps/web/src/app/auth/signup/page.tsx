@@ -49,8 +49,8 @@ export default function SignUpPage() {
       const loginResponse = await api.login(username, password)
       if (loginResponse.data) {
         api.setToken(loginResponse.data.access_token)
-        router.push('/')
-        router.refresh()
+        // Force a full page reload to update auth state everywhere
+        window.location.href = '/'
       }
     } catch (err) {
       setError('An unexpected error occurred')

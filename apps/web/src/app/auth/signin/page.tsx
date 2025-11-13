@@ -27,8 +27,8 @@ export default function SignInPage() {
 
       if (response.data) {
         api.setToken(response.data.access_token)
-        router.push('/')
-        router.refresh()
+        // Force a full page reload to update auth state everywhere
+        window.location.href = '/'
       }
     } catch (err) {
       setError('An unexpected error occurred')
