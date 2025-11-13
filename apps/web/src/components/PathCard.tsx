@@ -129,21 +129,20 @@ export function PathCard({ path, onView, onEdit, onDelete }: PathCardProps) {
       )}
 
       {path.blocks.length > 0 && (
-        <div className="text-sm text-gray-600">
-          <p className="font-medium mb-1">Blocks in path:</p>
-          <div className="space-y-1">
-            {path.blocks.slice(0, 3).map((block, index) => (
-              <div key={block.id} className="flex items-center gap-2">
-                <span className="text-xs text-gray-400">{index + 1}.</span>
-                <span className="text-xs">{block.title}</span>
-                <span className="text-xs text-gray-400">({block.block_type})</span>
-              </div>
-            ))}
-            {path.blocks.length > 3 && (
-              <div className="text-xs text-gray-400">
-                +{path.blocks.length - 3} more blocks
-              </div>
-            )}
+        <div className="text-sm text-muted-foreground">
+          <div className="flex flex-wrap gap-1">
+            {(() => {
+              const typeCounts = path.blocks.reduce((acc, block) => {
+                acc[block.block_type] = (acc[block.block_type] || 0) + 1
+                return acc
+              }, {} as Record<string, number>)
+              
+              return Object.entries(typeCounts).map(([type, count]) => (
+                <span key={type} className="text-xs px-2 py-0.5 bg-muted rounded">
+                  {count}x {type}
+                </span>
+              ))
+            })()}
           </div>
         </div>
       )}
