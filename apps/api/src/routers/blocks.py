@@ -371,8 +371,13 @@ async def create_suggestion(
         await db.refresh(suggestion)
 
         return suggestion
-    except ValueError:
+    except ValueError as e:
         raise HTTPException(status_code=400, detail="Invalid block ID format")
+    except Exception as e:
+        import traceback
+        print(f"Error creating suggestion: {e}")
+        print(traceback.format_exc())
+        raise HTTPException(status_code=500, detail=f"Failed to create suggestion: {str(e)}")
 
 
 @router.get("/blocks/{block_id}/suggestions", response_model=List[SuggestionResponse])
