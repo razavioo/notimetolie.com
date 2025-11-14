@@ -16,12 +16,15 @@ interface AIConfig {
   id: string
   name: string
   description?: string
-  provider: 'openai' | 'anthropic' | 'custom'
+  provider: 'openai' | 'anthropic' | 'custom' | 'openai_compatible'
   agent_type: 'content_creator' | 'content_researcher' | 'content_editor' | 'course_designer'
   model_name: string
+  api_endpoint?: string
   temperature: number
   max_tokens: number
+  system_prompt?: string
   mcp_enabled: boolean
+  daily_request_limit?: number
   is_active: boolean
   created_at: string
 }
@@ -426,9 +429,13 @@ export default function AIConfigPage() {
                   provider: editingConfig.provider,
                   agent_type: editingConfig.agent_type,
                   model_name: editingConfig.model_name,
+                  api_key: '', // Don't send back encrypted key for security
+                  api_endpoint: editingConfig.api_endpoint,
                   temperature: editingConfig.temperature,
                   max_tokens: editingConfig.max_tokens,
+                  system_prompt: editingConfig.system_prompt,
                   mcp_enabled: editingConfig.mcp_enabled,
+                  daily_request_limit: editingConfig.daily_request_limit,
                 } : undefined}
                 onSubmit={async (data) => {
                   try {

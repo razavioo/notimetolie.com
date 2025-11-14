@@ -1,6 +1,6 @@
 'use client'
 
-import { useState } from 'react'
+import { useState, useEffect } from 'react'
 import { Button } from '@/components/ui/button'
 
 interface AIConfigFormData {
@@ -51,6 +51,127 @@ export function AIConfigForm({ onSubmit, onCancel, initialData, isLoading = fals
     daily_request_limit: initialData?.daily_request_limit || 50,
   })
 
+  // Pre-defined system prompts for each agent type
+  const SYSTEM_PROMPTS = {
+    content_creator: `You are a Content Creator AI agent. Your role is to generate new, original knowledge blocks.
+
+Your responsibilities:
+- Research topics thoroughly and create comprehensive, accurate content
+- Structure information in a clear, digestible format
+- Include relevant examples and code snippets where appropriate
+- Find and suggest relevant images or diagrams
+- Ensure content is self-contained and meaningful
+- Cite sources when using external information
+- Avoid duplicating existing content - always search first
+
+Guidelines:
+- Be accurate and factual
+- Use clear, concise language
+- Break complex topics into understandable parts
+- Include practical examples
+- Consider the target audience level`,
+
+    content_researcher: `You are a Content Researcher AI agent. Your role is to find and compile information from existing sources.
+
+Your responsibilities:
+- Search the web for authoritative sources on topics
+- Discover related blocks in the knowledge base
+- Compile research findings with proper citations
+- Identify gaps in existing content
+- Suggest additional resources and references
+- Evaluate source credibility and relevance
+
+Guidelines:
+- Prioritize authoritative and recent sources
+- Provide comprehensive source citations
+- Summarize findings clearly
+- Highlight connections between topics
+- Note conflicting information when found`,
+
+    content_editor: `You are a Content Editor AI agent. Your role is to improve and refine existing content.
+
+Your responsibilities:
+- Enhance clarity and readability
+- Fix grammar, spelling, and formatting errors
+- Improve structure and flow
+- Optimize for comprehension
+- Ensure consistency in style and terminology
+- Suggest better examples or explanations
+- Update outdated information
+
+Guidelines:
+- Preserve the author's intent and voice
+- Make constructive improvements
+- Focus on clarity over complexity
+- Maintain factual accuracy
+- Provide rationale for significant changes`,
+
+    course_designer: `You are a Course Designer AI agent. Your role is to organize content blocks into logical learning paths.
+
+Your responsibilities:
+- Select appropriate blocks for learning objectives
+- Order content in a logical progression
+- Identify prerequisites and dependencies
+- Fill gaps with suggestions for missing content
+- Ensure smooth transitions between topics
+- Balance difficulty and pacing
+- Create comprehensive learning journeys
+
+Guidelines:
+- Start with fundamentals and build complexity
+- Consider learner progression
+- Maintain clear learning objectives
+- Ensure each step builds on previous knowledge
+- Provide alternative paths when appropriate`
+  }
+
+  // Update form when initialData changes (for edit mode)
+  useEffect(() => {
+    if (initialData) {
+      const agentType = initialData.agent_type || 'content_creator'
+      setFormData({
+        name: initialData.name || '',
+        description: initialData.description || '',
+        provider: initialData.provider || 'openai',
+        agent_type: agentType,
+        model_name: initialData.model_name || 'gpt-4',
+        api_key: initialData.api_key || '',
+        api_endpoint: initialData.api_endpoint || '',
+        temperature: initialData.temperature || 0.7,
+        max_tokens: initialData.max_tokens || 2000,
+        system_prompt: initialData.system_prompt || SYSTEM_PROMPTS[agentType as keyof typeof SYSTEM_PROMPTS] || '',
+        mcp_enabled: true, // Always enabled
+        mcp_server_url: initialData.mcp_server_url || 'http://localhost:8000',
+        mcp_capable: true, // Auto-detect as capable
+        can_create_blocks: true, // Determined by agent_type
+        can_edit_blocks: true, // Determined by agent_type
+        can_search_web: true, // Always enabled
+        daily_request_limit: initialData.daily_request_limit || 50,
+      })
+    } else {
+      // Reset form for create mode
+      setFormData({
+        name: '',
+        description: '',
+        provider: 'openai',
+        agent_type: 'content_creator',
+        model_name: 'gpt-4',
+        api_key: '',
+        api_endpoint: '',
+        temperature: 0.7,
+        max_tokens: 2000,
+        system_prompt: SYSTEM_PROMPTS.content_creator,
+        mcp_enabled: true,
+        mcp_server_url: 'http://localhost:8000',
+        mcp_capable: true,
+        can_create_blocks: true,
+        can_edit_blocks: false,
+        can_search_web: true,
+        daily_request_limit: 50,
+      })
+    }
+  }, [initialData])
+
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault()
     await onSubmit(formData)
@@ -58,6 +179,23 @@ export function AIConfigForm({ onSubmit, onCancel, initialData, isLoading = fals
 
   const updateField = (field: keyof AIConfigFormData, value: any) => {
     setFormData(prev => ({ ...prev, [field]: value }))
+  }
+
+  const handleAgentTypeChange = (newAgentType: string) => {
+    const agentType = newAgentType as keyof typeof SYSTEM_PROMPTS
+    setFormData(prev => ({
+      ...prev,
+      agent_type: newAgentType as any,
+      system_prompt: SYSTEM_PROMPTS[agentType] || prev.system_prompt
+    }))
+  }
+
+  const handleUseDefaultPrompt = () => {
+    const agentType = formData.agent_type as keyof typeof SYSTEM_PROMPTS
+    setFormData(prev => ({
+      ...prev,
+      system_prompt: SYSTEM_PROMPTS[agentType]
+    }))
   }
 
   const getModelOptions = () => {
@@ -70,18 +208,31 @@ export function AIConfigForm({ onSubmit, onCancel, initialData, isLoading = fals
     }
   }
 
-  const getProviderDescription = () => {
-    if (formData.provider === 'openai') {
-      return 'OpenAI models do not natively support MCP'
-    } else if (formData.provider === 'anthropic') {
-      return 'Claude models support MCP natively'
-    } else {
-      return 'OpenAI-compatible endpoints may or may not support MCP - check your model documentation'
+  const getAgentTypeLabel = (type: string) => {
+    const labels = {
+      content_creator: 'Content Creator',
+      content_researcher: 'Content Researcher',
+      content_editor: 'Content Editor',
+      course_designer: 'Course Designer',
     }
+    return labels[type as keyof typeof labels] || type
   }
 
   return (
     <form onSubmit={handleSubmit} className="space-y-6">
+      {/* Info Box */}
+      <div className="p-4 bg-blue-50 dark:bg-blue-950/30 border border-blue-200 dark:border-blue-800 rounded-lg">
+        <h4 className="text-sm font-semibold text-blue-900 dark:text-blue-100 mb-2">
+          🤖 AI Agent Configuration
+        </h4>
+        <ul className="text-xs text-blue-800 dark:text-blue-200 space-y-1">
+          <li>• <strong>Agent Type</strong> determines capabilities (create, edit, research, or design)</li>
+          <li>• <strong>MCP (Model Context Protocol)</strong> is always enabled for context-aware content generation</li>
+          <li>• <strong>System Prompts</strong> can be customized or use the default for each agent type</li>
+          <li>• Each agent is restricted to its designated purpose</li>
+        </ul>
+      </div>
+
       {/* Basic Info */}
       <div className="space-y-4">
         <h3 className="text-lg font-semibold">Basic Information</h3>
@@ -143,14 +294,17 @@ export function AIConfigForm({ onSubmit, onCancel, initialData, isLoading = fals
             <select
               id="agent_type"
               value={formData.agent_type}
-              onChange={(e) => updateField('agent_type', e.target.value)}
+              onChange={(e) => handleAgentTypeChange(e.target.value)}
               className="w-full px-3 py-2 border border-input rounded-md bg-background text-foreground placeholder:text-muted-foreground focus:outline-none focus:ring-2 focus:ring-primary"
             >
-              <option value="content_creator">Content Creator</option>
-              <option value="content_researcher">Content Researcher</option>
-              <option value="content_editor">Content Editor</option>
-              <option value="course_designer">Course Designer</option>
+              <option value="content_creator">Content Creator - Generate new blocks</option>
+              <option value="content_researcher">Content Researcher - Find and compile resources</option>
+              <option value="content_editor">Content Editor - Improve existing content</option>
+              <option value="course_designer">Course Designer - Organize learning paths</option>
             </select>
+            <p className="text-xs text-muted-foreground mt-1">
+              Agent type determines its capabilities and permissions
+            </p>
           </div>
         </div>
       </div>
@@ -194,18 +348,20 @@ export function AIConfigForm({ onSubmit, onCancel, initialData, isLoading = fals
 
         <div>
           <label htmlFor="api_key" className="block text-sm font-medium mb-2">
-            API Key {formData.provider !== 'custom' && '(Optional - uses env var if not provided)'}
+            API Key {initialData ? '(Leave empty to keep existing key)' : '(Optional - uses env var if not provided)'}
           </label>
           <input
             id="api_key"
             type="password"
             value={formData.api_key}
             onChange={(e) => updateField('api_key', e.target.value)}
-            placeholder={`${formData.provider.toUpperCase()}_API_KEY`}
+            placeholder={initialData ? 'Enter new key to replace existing key' : `${formData.provider.toUpperCase()}_API_KEY`}
             className="w-full px-3 py-2 border border-input rounded-md bg-background text-foreground placeholder:text-muted-foreground focus:outline-none focus:ring-2 focus:ring-primary"
           />
           <p className="text-xs text-muted-foreground mt-1">
-            Will be encrypted and stored securely
+            {initialData 
+              ? 'Encrypted and stored securely. Only enter a value to update the existing key.' 
+              : 'Will be encrypted and stored securely. If not provided, the system will use environment variables.'}
           </p>
         </div>
 
@@ -269,129 +425,37 @@ export function AIConfigForm({ onSubmit, onCancel, initialData, isLoading = fals
         </div>
 
         <div>
-          <label htmlFor="system_prompt" className="block text-sm font-medium mb-2">
-            System Prompt (Optional)
-          </label>
+          <div className="flex items-center justify-between mb-2">
+            <label htmlFor="system_prompt" className="block text-sm font-medium">
+              System Prompt
+            </label>
+            <Button
+              type="button"
+              variant="outline"
+              size="sm"
+              onClick={handleUseDefaultPrompt}
+              className="text-xs"
+            >
+              Use Default for {getAgentTypeLabel(formData.agent_type)}
+            </Button>
+          </div>
           <textarea
             id="system_prompt"
             value={formData.system_prompt}
             onChange={(e) => updateField('system_prompt', e.target.value)}
-            placeholder="Custom instructions for the AI agent..."
-            rows={4}
-            className="w-full px-3 py-2 border border-input rounded-md bg-background text-foreground placeholder:text-muted-foreground focus:outline-none focus:ring-2 focus:ring-primary"
+            placeholder="Instructions for the AI agent..."
+            rows={8}
+            className="w-full px-3 py-2 border border-input rounded-md bg-background text-foreground placeholder:text-muted-foreground focus:outline-none focus:ring-2 focus:ring-primary font-mono text-sm"
           />
+          <p className="text-xs text-muted-foreground mt-1">
+            Customize the agent's behavior or use the default prompt for the selected agent type
+          </p>
         </div>
       </div>
 
-      {/* MCP Configuration */}
+      {/* Request Limits */}
       <div className="space-y-4">
-        <h3 className="text-lg font-semibold">MCP Integration</h3>
-        
-        <div className="flex items-start gap-3 p-3 bg-muted/50 rounded-md border">
-          <div className="text-sm text-muted-foreground">
-            <span className="font-medium block mb-1">About MCP Capability:</span>
-            {getProviderDescription()}
-          </div>
-        </div>
-
-        <div className="flex items-center gap-2">
-          <input
-            id="mcp_capable"
-            type="checkbox"
-            checked={formData.mcp_capable}
-            onChange={(e) => {
-              const capable = e.target.checked
-              updateField('mcp_capable', capable)
-              // Auto-enable if model is capable, but allow user to disable
-              if (capable && !formData.mcp_enabled) {
-                updateField('mcp_enabled', true)
-              }
-            }}
-            className="rounded"
-          />
-          <label htmlFor="mcp_capable" className="text-sm font-medium">
-            Model supports MCP protocol
-          </label>
-        </div>
-
-        <div className="flex items-center gap-2">
-          <input
-            id="mcp_enabled"
-            type="checkbox"
-            checked={formData.mcp_enabled}
-            onChange={(e) => updateField('mcp_enabled', e.target.checked)}
-            disabled={!formData.mcp_capable}
-            className="rounded disabled:opacity-50"
-          />
-          <label htmlFor="mcp_enabled" className="text-sm font-medium">
-            Enable MCP integration {!formData.mcp_capable && '(requires MCP-capable model)'}
-          </label>
-        </div>
-
-        {formData.mcp_enabled && formData.mcp_capable && (
-          <div>
-            <label htmlFor="mcp_server_url" className="block text-sm font-medium mb-2">
-              MCP Server URL
-            </label>
-            <input
-              id="mcp_server_url"
-              type="url"
-              value={formData.mcp_server_url}
-              onChange={(e) => updateField('mcp_server_url', e.target.value)}
-              placeholder="http://localhost:8000"
-              className="w-full px-3 py-2 border border-input rounded-md bg-background text-foreground placeholder:text-muted-foreground focus:outline-none focus:ring-2 focus:ring-primary"
-            />
-            <p className="text-xs text-muted-foreground mt-1">
-              URL where your MCP server is running. See <a href="/mcp" className="text-primary hover:underline">MCP documentation</a> for setup.
-            </p>
-          </div>
-        )}
-      </div>
-
-      {/* Permissions */}
-      <div className="space-y-4">
-        <h3 className="text-lg font-semibold">Permissions & Limits</h3>
-        
-        <div className="space-y-2">
-          <div className="flex items-center gap-2">
-            <input
-              id="can_create_blocks"
-              type="checkbox"
-              checked={formData.can_create_blocks}
-              onChange={(e) => updateField('can_create_blocks', e.target.checked)}
-              className="rounded"
-            />
-            <label htmlFor="can_create_blocks" className="text-sm">
-              Can create new blocks
-            </label>
-          </div>
-
-          <div className="flex items-center gap-2">
-            <input
-              id="can_edit_blocks"
-              type="checkbox"
-              checked={formData.can_edit_blocks}
-              onChange={(e) => updateField('can_edit_blocks', e.target.checked)}
-              className="rounded"
-            />
-            <label htmlFor="can_edit_blocks" className="text-sm">
-              Can edit existing blocks
-            </label>
-          </div>
-
-          <div className="flex items-center gap-2">
-            <input
-              id="can_search_web"
-              type="checkbox"
-              checked={formData.can_search_web}
-              onChange={(e) => updateField('can_search_web', e.target.checked)}
-              className="rounded"
-            />
-            <label htmlFor="can_search_web" className="text-sm">
-              Can search web for information
-            </label>
-          </div>
-        </div>
+        <h3 className="text-lg font-semibold">Request Limits</h3>
 
         <div>
           <label htmlFor="daily_request_limit" className="block text-sm font-medium mb-2">

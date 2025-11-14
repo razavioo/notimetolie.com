@@ -19,6 +19,25 @@ export function PathForm({ onSubmit, initialData, isLoading = false }: PathFormP
   const [tagsInput, setTagsInput] = useState(initialData?.tags?.join(', ') || '')
   const [validationError, setValidationError] = useState<string | null>(null)
 
+  // Update form fields when initialData changes (for edit mode)
+  useEffect(() => {
+    if (initialData) {
+      setTitle(initialData.title || '')
+      setSlug(initialData.slug || '')
+      setSelectedBlocks(initialData.block_ids || [])
+      setLanguage(initialData.language || 'en')
+      setTagsInput(initialData.tags?.join(', ') || '')
+    } else {
+      // Reset form for create mode
+      setTitle('')
+      setSlug('')
+      setSelectedBlocks([])
+      setLanguage('en')
+      setTagsInput('')
+    }
+    setValidationError(null)
+  }, [initialData])
+
   const generateSlug = (text: string) => {
     return text
       .toLowerCase()

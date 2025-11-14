@@ -111,15 +111,8 @@ export default function UnifiedAIPage() {
       return
     }
 
-    // Check if API key is configured
-    if (!config.api_key_encrypted && !process.env.NEXT_PUBLIC_DEFAULT_AI_KEY) {
-      setError(
-        'API key not configured for this AI agent. Please go to AI Configuration and add an API key, ' +
-        'or set a default API key in your environment variables.'
-      )
-      return
-    }
-
+    // Note: API key validation is done on the backend
+    // The backend will use the encrypted key or fall back to environment variables
     setError(null)
     setCurrentJob(null)
     prevJobStatus.current = null

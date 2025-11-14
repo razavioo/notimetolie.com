@@ -1,6 +1,6 @@
 'use client'
 
-import { useState } from 'react'
+import { useState, useEffect } from 'react'
 import { BlockEditor } from '@/components/BlockEditor'
 import { Block } from '@blocknote/core'
 
@@ -26,6 +26,26 @@ export function BlockForm({ onSubmit, initialData, isLoading = false }: BlockFor
   const [content, setContent] = useState<Block[]>(initialData?.content || [])
   const [language, setLanguage] = useState(initialData?.language || 'en')
   const [tagsInput, setTagsInput] = useState(initialData?.tags?.join(', ') || '')
+
+  // Update form fields when initialData changes (for edit mode)
+  useEffect(() => {
+    if (initialData) {
+      setTitle(initialData.title || '')
+      setSlug(initialData.slug || '')
+      setBlockType(initialData.block_type || 'text')
+      setContent(initialData.content || [])
+      setLanguage(initialData.language || 'en')
+      setTagsInput(initialData.tags?.join(', ') || '')
+    } else {
+      // Reset form for create mode
+      setTitle('')
+      setSlug('')
+      setBlockType('text')
+      setContent([])
+      setLanguage('en')
+      setTagsInput('')
+    }
+  }, [initialData])
 
   const generateSlug = (text: string) => {
     return text
