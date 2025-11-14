@@ -170,8 +170,8 @@ export default function PathDetailPage() {
               </div>
             ) : (
               <div className="relative">
-                {/* Connecting line */}
-                <div className="absolute left-[35px] top-12 bottom-12 w-0.5 bg-gradient-to-b from-primary/30 via-primary/20 to-primary/10"></div>
+                {/* Connecting line - positioned behind cards */}
+                <div className="absolute left-[35px] top-12 bottom-12 w-0.5 bg-gradient-to-b from-primary/30 via-primary/20 to-primary/10 -z-10"></div>
                 
                 <div className="space-y-6">
                   {path.blocks.map((block, index) => {
@@ -185,17 +185,12 @@ export default function PathDetailPage() {
                         onClick={() => router.push(`/blocks/${block.slug}`)}
                         className="relative group"
                       >
-                        {/* Animated hover background */}
-                        <div className={`absolute inset-0 rounded-2xl opacity-0 group-hover:opacity-100 transition-opacity duration-300 ${
-                          isMastered ? 'bg-gradient-to-r from-green-50 to-transparent' : 'bg-gradient-to-r from-primary/5 to-transparent'
-                        }`}></div>
-                        
-                        {/* Content card */}
-                        <div className={`relative flex items-start gap-6 p-6 rounded-2xl border-2 bg-card hover:shadow-lg hover:scale-[1.01] cursor-pointer transition-all duration-300 ${
+                        {/* Content card with solid background */}
+                        <div className={`relative flex items-start gap-6 p-6 rounded-2xl border-2 hover:shadow-lg hover:scale-[1.01] cursor-pointer transition-all duration-300 ${
                           isMastered 
-                            ? 'border-green-200 bg-green-50/30 hover:border-green-400' 
-                            : 'border-border hover:border-primary/50'
-                        }`}>
+                            ? 'bg-green-50 dark:bg-green-950/50 border-green-200 hover:border-green-400' 
+                            : 'bg-card border-border hover:border-primary/50'
+                        } backdrop-blur-sm`}>
                           {/* Step number with glow */}
                           <div className="relative flex-shrink-0">
                             <div className={`w-14 h-14 rounded-full text-white flex items-center justify-center font-bold text-lg shadow-lg group-hover:scale-110 transition-transform duration-300 ${
