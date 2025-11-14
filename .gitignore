@@ -253,3 +253,15 @@ logs/
 # Alembic
 apps/api/alembic/versions/*.py
 !apps/api/alembic/versions/001_initial.py
+
+# Process IDs
+.backend.pid
+.frontend.pid
+
+# Database backups
+*.db.backup
+
+# Backup files
+*.backup.tsx
+*.backup.ts
+*.backup.py

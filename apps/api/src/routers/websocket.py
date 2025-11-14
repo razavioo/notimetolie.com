@@ -67,10 +67,15 @@ async def websocket_endpoint(
         # For demo/development, accept without auth if no token
         # In production, always require authentication
         if token:
-            # TODO: Validate token and get user_id
-            # user = await get_current_user_ws(token, db)
-            # user_id = user.id
-            user_id = "demo-user"  # Placeholder
+            # Decode JWT token to get user info
+            from src.auth import jwt_manager
+            try:
+                payload = jwt_manager.decode_access_token(token)
+                user_id = str(payload.get("id"))  # Get user ID from token and convert to string
+                logger.info(f"WebSocket authenticated for user {user_id}")
+            except Exception as e:
+                logger.error(f"WebSocket auth error: {e}")
+                user_id = "demo-user"  # Fallback for development
         else:
             # Demo mode - generate temporary user ID
             import uuid

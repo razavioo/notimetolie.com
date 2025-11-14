@@ -29,11 +29,23 @@ export default function SettingsPage() {
       return
     }
     
-    // TODO: Check if user has admin role
-    // For now, allow access if authenticated
-    setIsAdmin(true)
-    loadSettings()
-    setIsLoading(false)
+    try {
+      const response = await fetch(`${process.env.NEXT_PUBLIC_API_URL}/v1/users/me`, {
+        headers: {
+          'Authorization': `Bearer ${token}`
+        }
+      })
+      
+      if (response.ok) {
+        const userData = await response.json()
+        setIsAdmin(userData.role === 'admin')
+        loadSettings()
+      }
+    } catch (error) {
+      console.error('Failed to check admin access:', error)
+    } finally {
+      setIsLoading(false)
+    }
   }
 
   const loadSettings = async () => {
@@ -97,7 +109,25 @@ export default function SettingsPage() {
   }
 
   if (!isAdmin) {
-    return null
+    return (
+      <div className="container mx-auto px-4 py-8">
+        <div className="max-w-4xl mx-auto">
+          <div className="p-8 border border-border rounded-lg bg-muted/50 text-center">
+            <Shield className="h-12 w-12 text-muted-foreground mx-auto mb-4" />
+            <h2 className="text-xl font-semibold mb-2">Admin Access Required</h2>
+            <p className="text-muted-foreground">
+              This page is only accessible to administrators. For personal settings, visit{' '}
+              <button 
+                onClick={() => router.push('/profile/settings')}
+                className="text-primary hover:underline font-medium"
+              >
+                Profile Settings
+              </button>
+            </p>
+          </div>
+        </div>
+      </div>
+    )
   }
 
   return (
@@ -109,6 +139,45 @@ export default function SettingsPage() {
       />
 
       <div className="max-w-4xl mx-auto space-y-6 mt-8">
+        {/* Quick Links */}
+        <Card>
+          <CardHeader>
+            <CardTitle>Quick Links</CardTitle>
+            <CardDescription>
+              Navigate to other settings pages
+            </CardDescription>
+          </CardHeader>
+          <CardContent>
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+              <Button
+                variant="outline"
+                className="justify-start h-auto py-4 px-4"
+                onClick={() => router.push('/ai-config')}
+              >
+                <div className="text-left">
+                  <div className="font-semibold mb-1">AI Agents</div>
+                  <div className="text-xs text-muted-foreground">
+                    Configure AI assistants for content creation
+                  </div>
+                </div>
+              </Button>
+              
+              <Button
+                variant="outline"
+                className="justify-start h-auto py-4 px-4"
+                onClick={() => router.push('/ai-jobs')}
+              >
+                <div className="text-left">
+                  <div className="font-semibold mb-1">AI Jobs</div>
+                  <div className="text-xs text-muted-foreground">
+                    View and manage AI content generation jobs
+                  </div>
+                </div>
+              </Button>
+            </div>
+          </CardContent>
+        </Card>
+
         {/* Google OAuth Configuration */}
         <Card>
           <CardHeader>

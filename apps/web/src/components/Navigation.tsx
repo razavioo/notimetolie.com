@@ -3,7 +3,7 @@
 import Link from 'next/link'
 import { usePathname, useRouter } from 'next/navigation'
 import { useState, useEffect, useRef } from 'react'
-import { User, Settings, Sparkles, LogOut, ChevronDown, Moon, Sun } from 'lucide-react'
+import { User, Settings, Sparkles, LogOut, ChevronDown, Moon, Sun, Shield } from 'lucide-react'
 import { useTheme } from 'next-themes'
 import { api } from '@/lib/api'
 import { useAuth } from '@/hooks/useAuth'
@@ -109,12 +109,22 @@ function ProfileDropdown({ user, hasPermission, hasRole, onLogout }: ProfileDrop
             )}
 
             <button
-              onClick={() => handleNavigation('/settings')}
+              onClick={() => handleNavigation('/profile/settings')}
               className="w-full px-4 py-2 text-sm text-left hover:bg-accent flex items-center gap-2"
             >
               <Settings className="h-4 w-4" />
-              Settings
+              Profile Settings
             </button>
+
+            {hasRole(['admin']) && (
+              <button
+                onClick={() => handleNavigation('/settings')}
+                className="w-full px-4 py-2 text-sm text-left hover:bg-accent flex items-center gap-2"
+              >
+                <Shield className="h-4 w-4" />
+                Site Settings
+              </button>
+            )}
 
             {/* Theme Toggle */}
             <button
@@ -160,8 +170,7 @@ function ProfileDropdown({ user, hasPermission, hasRole, onLogout }: ProfileDrop
 const navigation = [
   { name: 'Blocks', href: '/blocks', roles: ['*'] },
   { name: 'Paths', href: '/paths', roles: ['*'] },
-  { name: 'Create with AI', href: '/create', roles: ['builder', 'trusted_builder', 'moderator', 'admin'], permission: 'use_ai_agents' },
-  { name: 'AI Jobs', href: '/ai-jobs', roles: ['builder', 'trusted_builder', 'moderator', 'admin'], permission: 'use_ai_agents' },
+  { name: 'AI Create', href: '/ai-create', roles: ['builder', 'trusted_builder', 'moderator', 'admin'], permission: 'use_ai_agents' },
   { name: 'Search', href: '/search', roles: ['*'] },
   { name: 'Developers', href: '/developers', roles: ['*'] },
 ]

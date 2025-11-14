@@ -1,13 +1,14 @@
 """
 AI Configuration router for managing AI agents and jobs.
 """
-from typing import List, Optional
+from typing import List, Optional, Dict, Any
 from fastapi import APIRouter, Depends, HTTPException, status, BackgroundTasks
 from sqlalchemy.ext.asyncio import AsyncSession
 from sqlalchemy import select
 from pydantic import BaseModel, Field
-from datetime import datetime
+from datetime import datetime, timedelta
 import uuid
+import httpx
 
 from src.dependencies import get_db, get_current_user, require_permission
 from src.ai_config_models import (
@@ -20,8 +21,15 @@ from src.ai_config_models import (
 )
 from src.models import User
 from src.utils.encryption import encrypt_api_key, decrypt_api_key
+from src.services.ai_processor import start_ai_job_background
 
 router = APIRouter(prefix="/v1/ai", tags=["AI Configuration"])
+
+
+# Cache for OpenRouter models (simple in-memory cache)
+_openrouter_models_cache: Optional[Dict[str, Any]] = None
+_openrouter_cache_timestamp: Optional[datetime] = None
+CACHE_DURATION = timedelta(hours=1)  # Cache for 1 hour
 
 
 # Pydantic schemas
@@ -362,8 +370,8 @@ async def create_ai_job(
     await db.commit()
     await db.refresh(job)
     
-    # TODO: Start background processing
-    # background_tasks.add_task(process_ai_job, job.id, config.id)
+    # Start background processing
+    background_tasks.add_task(start_ai_job_background, str(job.id), str(config.id))
     
     return AIJobPublic(
         id=str(job.id),
@@ -378,6 +386,39 @@ async def create_ai_job(
         error_message=job.error_message,
         created_at=job.created_at.get("iso"),
     )
+
+
+@router.get("/jobs", response_model=List[AIJobPublic])
+async def list_ai_jobs(
+    db: AsyncSession = Depends(get_db),
+    current_user: User = Depends(require_permission("use_ai_agents")),
+):
+    """List all AI jobs for the current user."""
+    result = await db.execute(
+        select(AIJob)
+        .filter(AIJob.user_id == current_user.id)
+    )
+    jobs = result.scalars().all()
+    
+    # Sort in Python since JSON field ordering is complex in SQLAlchemy
+    jobs = sorted(jobs, key=lambda j: j.created_at.get("iso", ""), reverse=True)
+    
+    return [
+        AIJobPublic(
+            id=str(job.id),
+            configuration_id=str(job.configuration_id),
+            job_type=job.job_type,
+            status=job.status,
+            input_prompt=job.input_prompt,
+            output_data=job.output_data,
+            suggested_blocks=job.suggested_blocks,
+            started_at=job.started_at.get("iso") if job.started_at else None,
+            completed_at=job.completed_at.get("iso") if job.completed_at else None,
+            error_message=job.error_message,
+            created_at=job.created_at.get("iso"),
+        )
+        for job in jobs
+    ]
 
 
 @router.get("/jobs/{job_id}", response_model=AIJobPublic)
@@ -442,9 +483,24 @@ async def cancel_ai_job(
         )
     
     job.status = AIJobStatus.CANCELLED
+    job.error_message = "Cancelled by user"
+    job.completed_at = {"iso": datetime.utcnow().isoformat()}
     job.updated_at = {"iso": datetime.utcnow().isoformat()}
     
     await db.commit()
+    
+    # Send WebSocket notification
+    try:
+        from src.websocket.connection_manager import get_connection_manager
+        ws_manager = get_connection_manager()
+        await ws_manager.send_ai_job_update(
+            str(current_user.id),  # Convert UUID to string
+            str(job_id),           # Convert UUID to string
+            AIJobStatus.CANCELLED.value,
+            {"message": "Job cancelled by user"}
+        )
+    except Exception:
+        pass  # Don't fail if WebSocket unavailable
     
     return {"message": "Job cancelled successfully"}
 
@@ -556,3 +612,281 @@ async def reject_ai_suggestion(
     await db.commit()
     
     return {"message": "Suggestion rejected successfully"}
+
+
+@router.get("/providers/{provider}/models")
+async def get_provider_models(
+    provider: str,
+    search: Optional[str] = None,
+    free_only: Optional[bool] = False,
+):
+    """
+    Get available models for a specific provider.
+    Supports dynamic fetching from OpenRouter with caching.
+    This endpoint is public to allow model discovery before authentication.
+    """
+    global _openrouter_models_cache, _openrouter_cache_timestamp
+    
+    if provider == "openrouter":
+        # Check cache first
+        now = datetime.utcnow()
+        if (_openrouter_models_cache is not None and 
+            _openrouter_cache_timestamp is not None and 
+            now - _openrouter_cache_timestamp < CACHE_DURATION):
+            models = _openrouter_models_cache
+        else:
+            # Fetch from OpenRouter API
+            try:
+                async with httpx.AsyncClient(timeout=10.0) as client:
+                    response = await client.get("https://openrouter.ai/api/v1/models")
+                    response.raise_for_status()
+                    data = response.json()
+                    models = data.get("data", [])
+                    
+                    # Update cache
+                    _openrouter_models_cache = models
+                    _openrouter_cache_timestamp = now
+            except Exception as e:
+                raise HTTPException(
+                    status_code=status.HTTP_503_SERVICE_UNAVAILABLE,
+                    detail=f"Failed to fetch models from OpenRouter: {str(e)}"
+                )
+        
+        # Filter models
+        filtered_models = models
+        
+        if free_only:
+            filtered_models = [m for m in filtered_models if m.get("pricing", {}).get("prompt", "0") == "0"]
+        
+        if search:
+            search_lower = search.lower()
+            filtered_models = [
+                m for m in filtered_models 
+                if (search_lower in m.get("id", "").lower() or 
+                    search_lower in m.get("name", "").lower())
+            ]
+        
+        # Format response with relevant fields
+        formatted_models = [
+            {
+                "id": m.get("id"),
+                "name": m.get("name", m.get("id")),
+                "description": m.get("description", ""),
+                "context_length": m.get("context_length", 0),
+                "pricing": {
+                    "prompt": m.get("pricing", {}).get("prompt", "0"),
+                    "completion": m.get("pricing", {}).get("completion", "0"),
+                },
+                "top_provider": m.get("top_provider", {}),
+                "architecture": m.get("architecture", {}),
+            }
+            for m in filtered_models
+        ]
+        
+        return {
+            "provider": "openrouter",
+            "models": formatted_models,
+            "total": len(formatted_models),
+            "cached": _openrouter_cache_timestamp is not None,
+        }
+    
+    elif provider == "openai":
+        return {
+            "provider": "openai",
+            "models": [
+                {"id": "gpt-4", "name": "GPT-4", "description": "Most capable GPT-4 model"},
+                {"id": "gpt-4-turbo", "name": "GPT-4 Turbo", "description": "Faster and cheaper GPT-4"},
+                {"id": "gpt-3.5-turbo", "name": "GPT-3.5 Turbo", "description": "Fast and affordable"},
+            ],
+            "total": 3,
+            "cached": True,
+        }
+    
+    elif provider == "anthropic":
+        return {
+            "provider": "anthropic",
+            "models": [
+                {"id": "claude-3-opus-20240229", "name": "Claude 3 Opus", "description": "Most capable Claude model"},
+                {"id": "claude-3-sonnet-20240229", "name": "Claude 3 Sonnet", "description": "Balanced performance"},
+                {"id": "claude-3-haiku-20240307", "name": "Claude 3 Haiku", "description": "Fast and compact"},
+                {"id": "claude-3-5-sonnet-20241022", "name": "Claude 3.5 Sonnet", "description": "Most intelligent model"},
+            ],
+            "total": 4,
+            "cached": True,
+        }
+    
+    elif provider == "groq":
+        return {
+            "provider": "groq",
+            "models": [
+                {"id": "llama-3.3-70b-versatile", "name": "Llama 3.3 70B Versatile", "description": "Fast and versatile"},
+                {"id": "llama-3.1-8b-instant", "name": "Llama 3.1 8B Instant", "description": "Ultra-fast responses"},
+                {"id": "mixtral-8x7b-32768", "name": "Mixtral 8x7B", "description": "Mixture of experts"},
+                {"id": "gemma2-9b-it", "name": "Gemma 2 9B", "description": "Google's Gemma model"},
+            ],
+            "total": 4,
+            "cached": True,
+        }
+    
+    elif provider == "together_ai":
+        # Together AI has model list API at https://api.together.xyz/v1/models
+        try:
+            async with httpx.AsyncClient(timeout=10.0) as client:
+                response = await client.get(
+                    "https://api.together.xyz/v1/models",
+                    headers={"Authorization": f"Bearer {current_user.id}"}  # Would need actual API key
+                )
+                if response.status_code == 200:
+                    data = response.json()
+                    models = data if isinstance(data, list) else []
+                    formatted = [
+                        {
+                            "id": m.get("id"),
+                            "name": m.get("display_name", m.get("id")),
+                            "description": m.get("description", ""),
+                            "context_length": m.get("context_length", 0),
+                        }
+                        for m in models[:50]  # Limit to first 50
+                    ]
+                    return {"provider": "together_ai", "models": formatted, "total": len(formatted), "cached": False}
+        except:
+            pass
+        
+        # Fallback to popular models
+        return {
+            "provider": "together_ai",
+            "models": [
+                {"id": "meta-llama/Meta-Llama-3.1-8B-Instruct-Turbo", "name": "Llama 3.1 8B Instruct Turbo", "description": "Fast inference"},
+                {"id": "meta-llama/Meta-Llama-3.1-70B-Instruct-Turbo", "name": "Llama 3.1 70B Instruct Turbo", "description": "Balanced performance"},
+                {"id": "mistralai/Mixtral-8x7B-Instruct-v0.1", "name": "Mixtral 8x7B Instruct", "description": "Mixture of experts"},
+                {"id": "deepseek-ai/deepseek-coder-33b-instruct", "name": "DeepSeek Coder 33B", "description": "Code generation"},
+            ],
+            "total": 4,
+            "cached": True,
+        }
+    
+    elif provider == "cohere":
+        # Cohere has model list API at https://api.cohere.ai/v1/models
+        return {
+            "provider": "cohere",
+            "models": [
+                {"id": "command-r-plus", "name": "Command R+", "description": "Most capable model for RAG"},
+                {"id": "command-r", "name": "Command R", "description": "Balanced performance"},
+                {"id": "command", "name": "Command", "description": "Versatile model"},
+                {"id": "command-light", "name": "Command Light", "description": "Fast and efficient"},
+            ],
+            "total": 4,
+            "cached": True,
+        }
+    
+    elif provider == "huggingface":
+        return {
+            "provider": "huggingface",
+            "models": [
+                {"id": "meta-llama/Llama-3.3-70B-Instruct", "name": "Llama 3.3 70B Instruct", "description": "Latest Llama model"},
+                {"id": "mistralai/Mixtral-8x7B-Instruct-v0.1", "name": "Mixtral 8x7B Instruct", "description": "Mixture of experts"},
+                {"id": "google/gemma-2-9b-it", "name": "Gemma 2 9B IT", "description": "Google's Gemma"},
+                {"id": "microsoft/Phi-3.5-mini-instruct", "name": "Phi 3.5 Mini Instruct", "description": "Small but powerful"},
+            ],
+            "total": 4,
+            "cached": True,
+        }
+    
+    elif provider == "replicate":
+        return {
+            "provider": "replicate",
+            "models": [
+                {"id": "meta/meta-llama-3.1-405b-instruct", "name": "Llama 3.1 405B Instruct", "description": "Largest Llama model"},
+                {"id": "mistralai/mixtral-8x7b-instruct-v0.1", "name": "Mixtral 8x7B Instruct", "description": "Mixture of experts"},
+                {"id": "stability-ai/sdxl", "name": "Stable Diffusion XL", "description": "Image generation"},
+            ],
+            "total": 3,
+            "cached": True,
+        }
+    
+    elif provider == "fireworks_ai":
+        return {
+            "provider": "fireworks_ai",
+            "models": [
+                {"id": "accounts/fireworks/models/llama-v3p3-70b-instruct", "name": "Llama 3.3 70B Instruct", "description": "Fast Llama inference"},
+                {"id": "accounts/fireworks/models/mixtral-8x7b-instruct", "name": "Mixtral 8x7B Instruct", "description": "Fast mixtral"},
+                {"id": "accounts/fireworks/models/qwen2p5-72b-instruct", "name": "Qwen 2.5 72B Instruct", "description": "Multilingual model"},
+            ],
+            "total": 3,
+            "cached": True,
+        }
+    
+    elif provider == "google_ai":
+        return {
+            "provider": "google_ai",
+            "models": [
+                {"id": "gemini-2.0-flash", "name": "Gemini 2.0 Flash", "description": "Latest and fastest"},
+                {"id": "gemini-1.5-pro", "name": "Gemini 1.5 Pro", "description": "Most capable"},
+                {"id": "gemini-1.5-flash", "name": "Gemini 1.5 Flash", "description": "Fast and efficient"},
+            ],
+            "total": 3,
+            "cached": True,
+        }
+    
+    elif provider == "mistral_ai":
+        return {
+            "provider": "mistral_ai",
+            "models": [
+                {"id": "mistral-large-latest", "name": "Mistral Large", "description": "Most capable Mistral model"},
+                {"id": "mistral-medium-latest", "name": "Mistral Medium", "description": "Balanced performance"},
+                {"id": "mistral-small-latest", "name": "Mistral Small", "description": "Fast and efficient"},
+                {"id": "codestral-latest", "name": "Codestral", "description": "Code generation specialist"},
+            ],
+            "total": 4,
+            "cached": True,
+        }
+    
+    elif provider == "deepseek":
+        return {
+            "provider": "deepseek",
+            "models": [
+                {"id": "deepseek-chat", "name": "DeepSeek Chat", "description": "General purpose chat"},
+                {"id": "deepseek-coder", "name": "DeepSeek Coder", "description": "Code generation and understanding"},
+            ],
+            "total": 2,
+            "cached": True,
+        }
+    
+    elif provider == "perplexity":
+        return {
+            "provider": "perplexity",
+            "models": [
+                {"id": "llama-3.1-sonar-large-128k-online", "name": "Sonar Large 128K Online", "description": "With web search"},
+                {"id": "llama-3.1-sonar-small-128k-online", "name": "Sonar Small 128K Online", "description": "Fast with web search"},
+                {"id": "llama-3.1-sonar-large-128k-chat", "name": "Sonar Large 128K Chat", "description": "Offline chat"},
+            ],
+            "total": 3,
+            "cached": True,
+        }
+    
+    elif provider == "ai21_labs":
+        return {
+            "provider": "ai21_labs",
+            "models": [
+                {"id": "jamba-1.5-large", "name": "Jamba 1.5 Large", "description": "Most capable Jamba model"},
+                {"id": "jamba-1.5-mini", "name": "Jamba 1.5 Mini", "description": "Fast and efficient"},
+            ],
+            "total": 2,
+            "cached": True,
+        }
+    
+    elif provider in ["azure_openai", "amazon_bedrock", "cloudflare_ai", "anyscale", "baseten", "modal", "lepton_ai", "aleph_alpha"]:
+        return {
+            "provider": provider,
+            "models": [
+                {"id": "custom-model", "name": "Configure in settings", "description": f"{provider} requires account-specific configuration"},
+            ],
+            "total": 1,
+            "cached": True,
+        }
+    
+    else:
+        raise HTTPException(
+            status_code=status.HTTP_400_BAD_REQUEST,
+            detail=f"Provider '{provider}' does not support dynamic model listing"
+        )

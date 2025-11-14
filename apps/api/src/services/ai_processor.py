@@ -17,10 +17,7 @@ from src.ai_config_models import (
     AIJobStatus,
 )
 from src.services.ai_providers import create_ai_provider
-from src.services.mcp_client import get_mcp_client
-from src.services.storage import get_storage_service
 from src.utils.encryption import decrypt_api_key
-from src.websocket.connection_manager import get_connection_manager
 
 
 class AIJobProcessor:
@@ -29,8 +26,33 @@ class AIJobProcessor:
     def __init__(self, db: AsyncSession):
         self.db = db
         self.mcp_client = None
-        self.storage = get_storage_service()
-        self.ws_manager = get_connection_manager()
+        self.storage = None
+        self.ws_manager = None
+    
+    def _get_mcp_client(self):
+        """Lazy load MCP client."""
+        if self.mcp_client is None:
+            from src.services.mcp_client import get_mcp_client
+            return get_mcp_client()
+        return self.mcp_client
+    
+    def _get_storage(self):
+        """Lazy load storage service."""
+        if self.storage is None:
+            try:
+                from src.services.storage import get_storage_service
+                self.storage = get_storage_service()
+            except ImportError:
+                print("Warning: Storage service not available (minio not installed)")
+                self.storage = None
+        return self.storage
+    
+    def _get_ws_manager(self):
+        """Lazy load WebSocket manager."""
+        if self.ws_manager is None:
+            from src.websocket.connection_manager import get_connection_manager
+            self.ws_manager = get_connection_manager()
+        return self.ws_manager
     
     async def process_job(self, job_id: str, config_id: str) -> None:
         """
@@ -68,12 +90,14 @@ class AIJobProcessor:
             await self.db.commit()
             
             # Send WebSocket update
-            await self.ws_manager.send_ai_job_update(
-                job.user_id,
-                job.id,
-                AIJobStatus.RUNNING.value,
-                {"message": "Job started"}
-            )
+            ws_manager = self._get_ws_manager()
+            if ws_manager:
+                await ws_manager.send_ai_job_update(
+                    str(job.user_id),  # Convert UUID to string
+                    str(job.id),       # Convert UUID to string
+                    AIJobStatus.RUNNING.value,
+                    {"message": "Job started"}
+                )
             
             # Process based on job type
             if job.job_type == "content_creator":
@@ -90,31 +114,37 @@ class AIJobProcessor:
             job.completed_at = {"iso": datetime.utcnow().isoformat()}
             
             # Send completion update
-            await self.ws_manager.send_ai_job_update(
-                job.user_id,
-                job.id,
-                AIJobStatus.COMPLETED.value,
-                {
-                    "message": "Job completed successfully",
-                    "output_data": job.output_data
-                }
-            )
+            ws_manager = self._get_ws_manager()
+            if ws_manager:
+                await ws_manager.send_ai_job_update(
+                    str(job.user_id),  # Convert UUID to string
+                    str(job.id),       # Convert UUID to string
+                    AIJobStatus.COMPLETED.value,
+                    {
+                        "message": "Job completed successfully",
+                        "output_data": job.output_data
+                    }
+                )
             
         except Exception as e:
             job.status = AIJobStatus.FAILED
             job.error_message = str(e)
             print(f"Error processing job {job_id}: {e}")
+            import traceback
+            traceback.print_exc()
             
             # Send failure update
-            await self.ws_manager.send_ai_job_update(
-                job.user_id,
-                job.id,
-                AIJobStatus.FAILED.value,
-                {
-                    "message": "Job failed",
-                    "error": str(e)
-                }
-            )
+            ws_manager = self._get_ws_manager()
+            if ws_manager:
+                await ws_manager.send_ai_job_update(
+                    str(job.user_id),  # Convert UUID to string
+                    str(job.id),       # Convert UUID to string
+                    AIJobStatus.FAILED.value,
+                    {
+                        "message": "Job failed",
+                        "error": str(e)
+                    }
+                )
         
         finally:
             job.updated_at = {"iso": datetime.utcnow().isoformat()}
@@ -127,15 +157,17 @@ class AIJobProcessor:
     ) -> None:
         """Process content creator job."""
         # Initialize MCP client
-        self.mcp_client = await get_mcp_client()
+        self.mcp_client = await self._get_mcp_client()
+        ws_manager = self._get_ws_manager()
         
         # Send progress update
-        await self.ws_manager.send_ai_job_progress(
-            job.user_id,
-            job.id,
-            10.0,
-            "Searching existing blocks via MCP..."
-        )
+        if ws_manager:
+            await ws_manager.send_ai_job_progress(
+                str(job.user_id),  # Convert UUID to string
+                str(job.id),       # Convert UUID to string
+                10.0,
+                "Searching existing blocks via MCP..."
+            )
         
         # Search existing blocks first via MCP
         existing_blocks = await self.mcp_client.search_existing_blocks(
@@ -145,12 +177,13 @@ class AIJobProcessor:
         )
         
         # Send progress update
-        await self.ws_manager.send_ai_job_progress(
-            job.user_id,
-            job.id,
-            30.0,
-            f"Found {len(existing_blocks)} related blocks"
-        )
+        if ws_manager:
+            await ws_manager.send_ai_job_progress(
+                str(job.user_id),  # Convert UUID to string
+                str(job.id),       # Convert UUID to string
+                30.0,
+                f"Found {len(existing_blocks)} related blocks"
+            )
         
         # Create AI provider (decrypt API key)
         api_key = decrypt_api_key(config.api_key_encrypted) if config.api_key_encrypted else None
@@ -176,12 +209,13 @@ Existing relevant blocks found:
 Based on these existing blocks, create new, non-duplicate content."""
         
         # Send progress update
-        await self.ws_manager.send_ai_job_progress(
-            job.user_id,
-            job.id,
-            50.0,
-            "Generating content with AI..."
-        )
+        if ws_manager:
+            await ws_manager.send_ai_job_progress(
+                str(job.user_id),  # Convert UUID to string
+                str(job.id),       # Convert UUID to string
+                50.0,
+                "Generating content with AI..."
+            )
         
         # Generate content
         result = await provider.generate(
@@ -191,15 +225,23 @@ Based on these existing blocks, create new, non-duplicate content."""
             max_tokens=config.max_tokens.get("value", 2000)
         )
         
-        # Send progress update
-        await self.ws_manager.send_ai_job_progress(
-            job.user_id,
-            job.id,
-            80.0,
-            "Creating suggestion..."
-        )
+        # Check if AI provider returned an error
+        if result.get("error"):
+            raise Exception(f"AI provider error: {result['error']}")
         
-        # Update job with results
+        if not result.get("content"):
+            raise Exception("AI provider returned no content")
+        
+        # Send progress update
+        if ws_manager:
+            await ws_manager.send_ai_job_progress(
+                str(job.user_id),  # Convert UUID to string
+                str(job.id),       # Convert UUID to string
+                80.0,
+                "Creating suggestion..."
+            )
+        
+        # Update job with results (UUIDs already converted to strings by MCP client)
         job.output_data = result
         job.tokens_used = result.get("tokens_used", {})
         job.suggested_blocks = [b["id"] for b in existing_blocks]
@@ -218,7 +260,7 @@ Based on these existing blocks, create new, non-duplicate content."""
         config: AIConfiguration
     ) -> None:
         """Process content researcher job."""
-        self.mcp_client = await get_mcp_client()
+        self.mcp_client = await self._get_mcp_client()
         
         # Search for related content
         related_blocks = await self.mcp_client.discover_related_content(
@@ -250,6 +292,14 @@ Summarize these findings and suggest what additional content is needed."""
             max_tokens=config.max_tokens.get("value", 2000)
         )
         
+        # Check if AI provider returned an error
+        if result.get("error"):
+            raise Exception(f"AI provider error: {result['error']}")
+        
+        if not result.get("content"):
+            raise Exception("AI provider returned no content")
+        
+        # UUIDs already converted to strings by MCP client
         job.output_data = {
             "summary": result.get("content"),
             "related_blocks": related_blocks
@@ -272,7 +322,7 @@ Summarize these findings and suggest what additional content is needed."""
         config: AIConfiguration
     ) -> None:
         """Process course designer job."""
-        self.mcp_client = await get_mcp_client()
+        self.mcp_client = await self._get_mcp_client()
         
         # Find relevant blocks for course
         related_blocks = await self.mcp_client.discover_related_content(
@@ -304,6 +354,14 @@ Create a structured course outline using these blocks and suggest any missing bl
             max_tokens=config.max_tokens.get("value", 2000)
         )
         
+        # Check if AI provider returned an error
+        if result.get("error"):
+            raise Exception(f"AI provider error: {result['error']}")
+        
+        if not result.get("content"):
+            raise Exception("AI provider returned no content")
+        
+        # UUIDs already converted to strings by MCP client
         job.output_data = {
             "course_outline": result.get("content"),
             "suggested_blocks": related_blocks
@@ -368,3 +426,46 @@ async def process_ai_job_background(
     """
     processor = AIJobProcessor(db)
     await processor.process_job(job_id, config_id)
+
+
+def start_ai_job_background(job_id: str, config_id: str) -> None:
+    """
+    Synchronous wrapper to start an async AI job processing task.
+    Creates its own database session for background processing.
+    
+    Args:
+        job_id: AI job ID
+        config_id: AI configuration ID
+    """
+    import asyncio
+    from src.database import AsyncSessionLocal
+    
+    print(f"[AI JOB] Starting background processing for job {job_id} with config {config_id}")
+    
+    async def _process():
+        try:
+            print(f"[AI JOB] Creating database session for job {job_id}")
+            async with AsyncSessionLocal() as session:
+                print(f"[AI JOB] Calling process_ai_job_background for job {job_id}")
+                await process_ai_job_background(job_id, config_id, session)
+                print(f"[AI JOB] Successfully completed processing for job {job_id}")
+        except Exception as e:
+            print(f"[AI JOB] ERROR in _process for job {job_id}: {e}")
+            import traceback
+            traceback.print_exc()
+    
+    # Run in the current event loop or create a new one
+    try:
+        loop = asyncio.get_event_loop()
+        if loop.is_running():
+            # If loop is already running (FastAPI context), create a task
+            print(f"[AI JOB] Creating async task for job {job_id} in running event loop")
+            asyncio.create_task(_process())
+        else:
+            # If no loop is running, run until complete
+            print(f"[AI JOB] Running job {job_id} in existing non-running loop")
+            loop.run_until_complete(_process())
+    except RuntimeError as e:
+        # No event loop, create new one
+        print(f"[AI JOB] No event loop, creating new one for job {job_id}: {e}")
+        asyncio.run(_process())

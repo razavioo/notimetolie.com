@@ -26,6 +26,8 @@ export default function AICreatePage() {
   const [suggestions, setSuggestions] = useState<AIBlockSuggestion[]>([])
   const [jobProgress, setJobProgress] = useState<{ progress: number; message: string }>({ progress: 0, message: '' })
   const [error, setError] = useState<string | null>(null)
+  const [jobStartTime, setJobStartTime] = useState<number | null>(null)
+  const [isStuck, setIsStuck] = useState(false)
 
   // WebSocket for real-time updates
   useAIJobUpdates((update) => {
@@ -57,6 +59,40 @@ export default function AICreatePage() {
     }
   }, [step])
 
+  // Timeout detection for stuck jobs
+  useEffect(() => {
+    if (step !== 'generating' || !currentJob) {
+      setIsStuck(false)
+      return
+    }
+
+    // Check every 30 seconds if job is stuck
+    const checkInterval = setInterval(async () => {
+      if (!currentJob) return
+
+      // Fetch latest job status
+      const { data } = await api.getAIJob(currentJob.id)
+      if (data) {
+        if (data.status === 'failed') {
+          setError(data.error_message || 'Job failed')
+          setStep('prompt')
+          clearInterval(checkInterval)
+        } else if (data.status === 'completed') {
+          loadSuggestions(data.id)
+          setStep('review')
+          clearInterval(checkInterval)
+        }
+      }
+
+      // Check if job is stuck (no progress for 2 minutes)
+      if (jobStartTime && Date.now() - jobStartTime > 120000) {
+        setIsStuck(true)
+      }
+    }, 30000)
+
+    return () => clearInterval(checkInterval)
+  }, [step, currentJob, jobStartTime])
+
   const loadConfigurations = async () => {
     const { data, error } = await api.listAIConfigurations()
     if (data) {
@@ -85,6 +121,8 @@ export default function AICreatePage() {
     setError(null)
     setStep('generating')
     setJobProgress({ progress: 0, message: 'Starting AI job...' })
+    setJobStartTime(Date.now())
+    setIsStuck(false)
 
     const agentType = contentType === 'block' ? 'content_creator' : 'course_designer'
     
@@ -141,6 +179,18 @@ export default function AICreatePage() {
     setStep('prompt')
     setCurrentJob(null)
     setSuggestions([])
+  }
+
+  const handleCancelJob = () => {
+    setStep('prompt')
+    setCurrentJob(null)
+    setJobProgress({ progress: 0, message: '' })
+    setJobStartTime(null)
+    setIsStuck(false)
+  }
+
+  const handleViewAllJobs = () => {
+    router.push('/ai-jobs')
   }
 
   const renderStepIndicator = () => (
@@ -365,7 +415,14 @@ export default function AICreatePage() {
                 <div>
                   <h3 className="text-xl font-semibold mb-2">AI is working on your {contentType}</h3>
                   <p className="text-muted-foreground">{jobProgress.message || 'Please wait...'}</p>
+                  {currentJob && (
+                    <p className="text-xs text-muted-foreground mt-2">
+                      Job ID: {currentJob.id.substring(0, 8)}...
+                    </p>
+                  )}
                 </div>
+                
+                {/* Progress Bar */}
                 {jobProgress.progress > 0 && (
                   <div className="max-w-md mx-auto">
                     <div className="w-full bg-muted rounded-full h-2">
@@ -377,6 +434,50 @@ export default function AICreatePage() {
                     <p className="text-sm text-muted-foreground mt-2">{jobProgress.progress}% complete</p>
                   </div>
                 )}
+
+                {/* Stuck Warning */}
+                {isStuck && (
+                  <div className="max-w-md mx-auto p-4 bg-yellow-50 dark:bg-yellow-950/30 border border-yellow-200 dark:border-yellow-800 rounded-lg">
+                    <div className="flex items-start gap-2">
+                      <AlertCircle className="h-5 w-5 text-yellow-600 dark:text-yellow-500 flex-shrink-0 mt-0.5" />
+                      <div className="text-sm text-left">
+                        <p className="font-medium text-yellow-800 dark:text-yellow-200 mb-1">
+                          Taking longer than expected
+                        </p>
+                        <p className="text-yellow-700 dark:text-yellow-300">
+                          This job is taking longer than usual. You can wait, cancel and try again, or view all jobs to check the status.
+                        </p>
+                      </div>
+                    </div>
+                  </div>
+                )}
+
+                {/* Action Buttons */}
+                <div className="flex flex-col sm:flex-row gap-3 justify-center max-w-md mx-auto pt-4">
+                  <Button
+                    variant="outline"
+                    onClick={handleCancelJob}
+                    className="flex-1"
+                  >
+                    <ArrowLeft className="h-4 w-4 mr-2" />
+                    Cancel & Go Back
+                  </Button>
+                  <Button
+                    variant="outline"
+                    onClick={handleViewAllJobs}
+                    className="flex-1"
+                  >
+                    View All Jobs
+                  </Button>
+                </div>
+
+                {/* Help Text */}
+                <div className="max-w-md mx-auto text-xs text-muted-foreground pt-4 border-t">
+                  <p>
+                    Processing can take 30-60 seconds depending on the complexity. 
+                    You can safely leave this page and check status in <button onClick={handleViewAllJobs} className="text-primary hover:underline">AI Jobs</button>.
+                  </p>
+                </div>
               </div>
             </CardContent>
           </Card>

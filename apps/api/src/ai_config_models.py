@@ -12,9 +12,44 @@ from .models import GUID
 
 class AIProvider(str, enum.Enum):
     """Supported AI providers."""
+    # Major Providers
     OPENAI = "openai"
     ANTHROPIC = "anthropic"
-    OPENAI_COMPATIBLE = "openai_compatible"
+    GOOGLE_AI = "google_ai"  # Google AI Studio / Gemini
+    
+    # Aggregators & Routers
+    OPENROUTER = "openrouter"
+    
+    # Ultra-Fast Inference
+    GROQ = "groq"
+    FIREWORKS_AI = "fireworks_ai"
+    LEPTON_AI = "lepton_ai"
+    
+    # Open Source Focused
+    TOGETHER_AI = "together_ai"
+    HUGGINGFACE = "huggingface"
+    REPLICATE = "replicate"
+    
+    # Enterprise & Specialized
+    COHERE = "cohere"
+    MISTRAL_AI = "mistral_ai"
+    AI21_LABS = "ai21_labs"
+    DEEPSEEK = "deepseek"
+    ALEPH_ALPHA = "aleph_alpha"
+    PERPLEXITY = "perplexity"
+    
+    # Cloud Platform Services
+    AZURE_OPENAI = "azure_openai"
+    AMAZON_BEDROCK = "amazon_bedrock"
+    CLOUDFLARE_AI = "cloudflare_ai"
+    
+    # Development & Deployment Platforms
+    ANYSCALE = "anyscale"
+    BASETEN = "baseten"
+    MODAL = "modal"
+    
+    # Local & Custom
+    OPENAI_COMPATIBLE = "openai_compatible"  # LM Studio, Ollama, vLLM, LocalAI, etc.
 
 
 class AIAgentType(str, enum.Enum):

@@ -222,45 +222,56 @@ export default function AIJobsPage() {
           <div className="space-y-4">
             {filteredJobs.map((job) => (
               <Card key={job.id} className="hover:shadow-md transition-shadow">
-                <CardContent className="p-6">
-                  <div className="flex items-start justify-between gap-4">
-                    <div className="flex items-start gap-4 flex-1">
-                      <div className="mt-1">
+                <CardContent className="pt-6 pb-5 px-5">
+                  <div className="flex flex-col sm:flex-row items-start justify-between gap-4">
+                    {/* Left side: Status icon and job details */}
+                    <div className="flex items-start gap-3.5 flex-1 min-w-0">
+                      <div className="flex-shrink-0 pt-0.5">
                         {getStatusIcon(job.status)}
                       </div>
-                      <div className="flex-1 min-w-0">
-                        <div className="flex items-center gap-2 mb-2">
-                          <h3 className="font-semibold truncate">
+                      
+                      <div className="flex-1 min-w-0 space-y-3">
+                        {/* Title and status badge */}
+                        <div className="flex items-center gap-2.5 flex-wrap">
+                          <h3 className="font-semibold text-base leading-snug">
                             {job.job_type === 'content_creator' ? 'Create Block' : 
                              job.job_type === 'course_designer' ? 'Create Path' : 
                              job.job_type}
                           </h3>
-                          <span className={`text-xs px-2 py-1 rounded-full border ${getStatusColor(job.status)}`}>
+                          <span className={`text-xs px-2.5 py-1 rounded-full border font-medium ${getStatusColor(job.status)}`}>
                             {job.status}
                           </span>
                         </div>
-                        <p className="text-sm text-muted-foreground mb-3 line-clamp-2">
+                        
+                        {/* Prompt */}
+                        <p className="text-sm text-muted-foreground line-clamp-2 leading-relaxed">
                           {job.input_prompt}
                         </p>
-                        <div className="flex flex-wrap gap-4 text-xs text-muted-foreground">
-                          <span>Created {formatDate(job.created_at)}</span>
-                          {job.completed_at && (
-                            <span>Completed {formatDate(job.completed_at)}</span>
-                          )}
+                        
+                        {/* Timestamps and errors */}
+                        <div className="flex flex-col gap-2">
+                          <div className="flex flex-wrap gap-3 text-xs text-muted-foreground">
+                            <span>Created {formatDate(job.created_at)}</span>
+                            {job.completed_at && (
+                              <span>• Completed {formatDate(job.completed_at)}</span>
+                            )}
+                          </div>
                           {job.error_message && (
-                            <span className="text-red-600 dark:text-red-400">
-                              Error: {job.error_message}
-                            </span>
+                            <div className="text-xs text-red-600 dark:text-red-400 bg-red-50 dark:bg-red-950/30 px-3 py-2.5 rounded-md leading-relaxed">
+                              <span className="font-semibold">Error:</span> {job.error_message}
+                            </div>
                           )}
                         </div>
                       </div>
                     </div>
 
-                    <div className="flex gap-2">
+                    {/* Right side: Action buttons */}
+                    <div className="flex gap-2 sm:flex-shrink-0 w-full sm:w-auto sm:pt-1">
                       {job.status === 'completed' && (
                         <Button
                           size="sm"
                           onClick={() => handleViewSuggestions(job.id)}
+                          className="flex-1 sm:flex-initial"
                         >
                           View Results
                         </Button>
@@ -270,6 +281,7 @@ export default function AIJobsPage() {
                           size="sm"
                           variant="destructive"
                           onClick={() => handleCancelJob(job.id)}
+                          className="flex-1 sm:flex-initial"
                         >
                           Cancel
                         </Button>
@@ -279,6 +291,7 @@ export default function AIJobsPage() {
                           size="sm"
                           variant="outline"
                           onClick={() => router.push('/create')}
+                          className="flex-1 sm:flex-initial"
                         >
                           Try Again
                         </Button>

@@ -11,6 +11,12 @@ export interface User {
   level: number
   is_active: boolean
   is_verified: boolean
+  metadata?: {
+    emailNotifications?: boolean
+    publicProfile?: boolean
+    language?: string
+  }
+  created_at?: string
 }
 
 export function useAuth() {

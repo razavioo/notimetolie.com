@@ -41,10 +41,10 @@ class MCPClient:
             )
             blocks = result.scalars().all()
             
-            # Format for MCP response
+            # Format for MCP response (convert UUIDs to strings)
             return [
                 {
-                    "id": block.id,
+                    "id": str(block.id),
                     "title": block.title,
                     "slug": block.slug,
                     "content_preview": block.content[:200] if block.content else None,
@@ -77,7 +77,7 @@ class MCPClient:
                 return None
             
             return {
-                "id": block.id,
+                "id": str(block.id),
                 "title": block.title,
                 "slug": block.slug,
                 "content": block.content,
@@ -85,7 +85,7 @@ class MCPClient:
                 "language": block.language,
                 "tags": block.tags,
                 "metadata": block.metadata,
-                "created_at": block.created_at.get("iso"),
+                "created_at": block.created_at.get("iso") if block.created_at else None,
             }
         except Exception as e:
             print(f"Error getting block context via MCP: {e}")
