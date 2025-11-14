@@ -38,6 +38,7 @@ class AIConfigCreate(BaseModel):
     system_prompt: Optional[str] = None
     mcp_enabled: bool = True
     mcp_server_url: Optional[str] = None
+    mcp_capable: bool = False  # Does the model support MCP?
     can_create_blocks: bool = True
     can_edit_blocks: bool = False
     can_search_web: bool = True
@@ -133,6 +134,7 @@ async def create_ai_configuration(
         system_prompt=config_data.system_prompt,
         mcp_enabled=config_data.mcp_enabled,
         mcp_server_url=config_data.mcp_server_url,
+        mcp_capable=config_data.mcp_capable,
         can_create_blocks=config_data.can_create_blocks,
         can_edit_blocks=config_data.can_edit_blocks,
         can_search_web=config_data.can_search_web,
@@ -147,7 +149,7 @@ async def create_ai_configuration(
     await db.refresh(config)
     
     return AIConfigPublic(
-        id=config.id,
+        id=str(config.id),
         name=config.name,
         description=config.description,
         provider=config.provider,
@@ -176,7 +178,7 @@ async def list_ai_configurations(
     
     return [
         AIConfigPublic(
-            id=c.id,
+            id=str(c.id),
             name=c.name,
             description=c.description,
             provider=c.provider,
@@ -236,8 +238,8 @@ async def create_ai_job(
     # background_tasks.add_task(process_ai_job, job.id, config.id)
     
     return AIJobPublic(
-        id=job.id,
-        configuration_id=job.configuration_id,
+        id=str(job.id),
+        configuration_id=str(job.configuration_id),
         job_type=job.job_type,
         status=job.status,
         input_prompt=job.input_prompt,
@@ -271,8 +273,8 @@ async def get_ai_job(
         )
     
     return AIJobPublic(
-        id=job.id,
-        configuration_id=job.configuration_id,
+        id=str(job.id),
+        configuration_id=str(job.configuration_id),
         job_type=job.job_type,
         status=job.status,
         input_prompt=job.input_prompt,
@@ -335,8 +337,8 @@ async def list_job_suggestions(
     
     return [
         AIBlockSuggestionPublic(
-            id=s.id,
-            ai_job_id=s.ai_job_id,
+            id=str(s.id),
+            ai_job_id=str(s.ai_job_id),
             title=s.title,
             slug=s.slug,
             content=s.content,
