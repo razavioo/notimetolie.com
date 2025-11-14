@@ -243,7 +243,7 @@ class AnthropicProvider(AIProvider):
 
 
 class CustomProvider(AIProvider):
-    """Custom API provider for self-hosted models."""
+    """OpenAI Compatible API provider for self-hosted models."""
     
     def __init__(self, api_endpoint: str, api_key: Optional[str] = None, model_name: str = "custom"):
         self.api_endpoint = api_endpoint
@@ -309,8 +309,8 @@ class CustomProvider(AIProvider):
         temperature: float = 0.7,
         max_tokens: int = 2000
     ) -> AsyncGenerator[str, None]:
-        """Stream completion from custom endpoint."""
-        yield "Streaming not implemented for custom provider"
+        """Stream completion from OpenAI Compatible endpoint."""
+        yield "Streaming not implemented for OpenAI Compatible provider"
 
 
 def create_ai_provider(
@@ -323,10 +323,10 @@ def create_ai_provider(
     Factory function to create AI provider instance.
     
     Args:
-        provider_type: 'openai', 'anthropic', or 'custom'
+        provider_type: 'openai', 'anthropic', or 'openai_compatible'
         api_key: API key for the provider
         model_name: Model to use
-        api_endpoint: Required for custom providers
+        api_endpoint: Required for openai_compatible providers
     
     Returns:
         AIProvider instance
@@ -335,9 +335,9 @@ def create_ai_provider(
         return OpenAIProvider(api_key, model_name)
     elif provider_type == "anthropic":
         return AnthropicProvider(api_key, model_name)
-    elif provider_type == "custom":
+    elif provider_type == "openai_compatible":
         if not api_endpoint:
-            raise ValueError("api_endpoint required for custom provider")
+            raise ValueError("api_endpoint required for OpenAI Compatible provider")
         return CustomProvider(api_endpoint, api_key, model_name)
     else:
         raise ValueError(f"Unknown provider type: {provider_type}")

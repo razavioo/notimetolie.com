@@ -14,7 +14,7 @@ class AIProvider(str, enum.Enum):
     """Supported AI providers."""
     OPENAI = "openai"
     ANTHROPIC = "anthropic"
-    CUSTOM = "custom"
+    OPENAI_COMPATIBLE = "openai_compatible"
 
 
 class AIAgentType(str, enum.Enum):
@@ -59,6 +59,7 @@ class AIConfiguration(Base):
     # MCP configuration
     mcp_enabled = Column(Boolean, default=True, nullable=False)
     mcp_server_url = Column(String(255), nullable=True)
+    mcp_capable = Column(Boolean, default=False, nullable=False)  # Does the model support MCP?
     
     # Permissions and limits
     can_create_blocks = Column(Boolean, default=True, nullable=False)

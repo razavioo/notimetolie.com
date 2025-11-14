@@ -55,13 +55,19 @@ export function AIAssistant({ onSuggestionAccepted, defaultPrompt = '', agentTyp
   const loadConfigurations = async () => {
     const { data, error } = await api.listAIConfigurations()
     if (data) {
-      const filtered = data.filter((c: AIConfiguration) => 
-        c.agent_type === agentType && c.is_active
-      )
-      setConfigs(filtered)
-      if (filtered.length > 0 && !selectedConfig) {
-        setSelectedConfig(filtered[0].id)
+      // Filter by active status and optionally prefer matching agent_type
+      const active = data.filter((c: AIConfiguration) => c.is_active)
+      const preferred = active.filter((c: AIConfiguration) => c.agent_type === agentType)
+      
+      // Use preferred agents if available, otherwise show all active
+      const toShow = preferred.length > 0 ? preferred : active
+      setConfigs(toShow)
+      
+      if (toShow.length > 0 && !selectedConfig) {
+        setSelectedConfig(toShow[0].id)
       }
+    } else if (error) {
+      console.error('Failed to load AI configurations:', error)
     }
   }
 

@@ -8,7 +8,7 @@ import { PathPublic, PathCreate } from '@/types/api'
 import { api } from '@/lib/api'
 import { useAuth } from '@/hooks/useAuth'
 import { PageHeader } from '@/components/PageHeader'
-import { Plus, Route } from 'lucide-react'
+import { Plus, Route, Sparkles } from 'lucide-react'
 import { Button } from '@/components/ui/button'
 
 export default function PathsPage() {
@@ -87,13 +87,25 @@ export default function PathsPage() {
         icon={<Route className="h-8 w-8 text-primary" />}
         actions={
           hasPermission('create_paths') ? (
-            <Button
-              onClick={() => router.push('/paths/create')}
-              className="flex items-center gap-2"
-            >
-              <Plus className="h-4 w-4" />
-              Create Path
-            </Button>
+            <div className="flex gap-2">
+              {hasPermission('use_ai_agents') && (
+                <Button
+                  onClick={() => router.push('/paths/create-with-ai')}
+                  variant="outline"
+                  className="flex items-center gap-2"
+                >
+                  <Sparkles className="h-4 w-4" />
+                  Create with AI
+                </Button>
+              )}
+              <Button
+                onClick={() => router.push('/paths/create')}
+                className="flex items-center gap-2"
+              >
+                <Plus className="h-4 w-4" />
+                Create Path
+              </Button>
+            </div>
           ) : undefined
         }
       />
@@ -136,13 +148,25 @@ export default function PathsPage() {
             Create your first learning path to organize blocks into structured learning journeys
           </p>
           {hasPermission('create_paths') && (
-            <Button
-              onClick={() => router.push('/paths/create')}
-              className="flex items-center gap-2 mx-auto"
-            >
-              <Plus className="h-4 w-4" />
-              Create Your First Path
-            </Button>
+            <div className="flex gap-2 justify-center">
+              {hasPermission('use_ai_agents') && (
+                <Button
+                  onClick={() => router.push('/paths/create-with-ai')}
+                  variant="outline"
+                  className="flex items-center gap-2"
+                >
+                  <Sparkles className="h-4 w-4" />
+                  Create with AI
+                </Button>
+              )}
+              <Button
+                onClick={() => router.push('/paths/create')}
+                className="flex items-center gap-2"
+              >
+                <Plus className="h-4 w-4" />
+                Create Your First Path
+              </Button>
+            </div>
           )}
         </div>
       ) : (

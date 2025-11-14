@@ -6,7 +6,7 @@ import { Button } from '@/components/ui/button'
 interface AIConfigFormData {
   name: string
   description?: string
-  provider: 'openai' | 'anthropic' | 'custom'
+  provider: 'openai' | 'anthropic' | 'openai_compatible'
   agent_type: 'content_creator' | 'content_researcher' | 'content_editor' | 'course_designer'
   model_name: string
   api_key?: string
@@ -16,6 +16,7 @@ interface AIConfigFormData {
   system_prompt?: string
   mcp_enabled: boolean
   mcp_server_url?: string
+  mcp_capable: boolean
   can_create_blocks: boolean
   can_edit_blocks: boolean
   can_search_web: boolean
@@ -43,6 +44,7 @@ export function AIConfigForm({ onSubmit, onCancel, initialData, isLoading = fals
     system_prompt: initialData?.system_prompt || '',
     mcp_enabled: initialData?.mcp_enabled ?? true,
     mcp_server_url: initialData?.mcp_server_url || 'http://localhost:8000',
+    mcp_capable: initialData?.mcp_capable ?? false,
     can_create_blocks: initialData?.can_create_blocks ?? true,
     can_edit_blocks: initialData?.can_edit_blocks ?? false,
     can_search_web: initialData?.can_search_web ?? true,
@@ -64,7 +66,17 @@ export function AIConfigForm({ onSubmit, onCancel, initialData, isLoading = fals
     } else if (formData.provider === 'anthropic') {
       return ['claude-3-opus-20240229', 'claude-3-sonnet-20240229', 'claude-3-haiku-20240307']
     } else {
-      return ['custom-model']
+      return [] // OpenAI Compatible allows custom model names
+    }
+  }
+
+  const getProviderDescription = () => {
+    if (formData.provider === 'openai') {
+      return 'OpenAI models do not natively support MCP'
+    } else if (formData.provider === 'anthropic') {
+      return 'Claude models support MCP natively'
+    } else {
+      return 'OpenAI-compatible endpoints may or may not support MCP - check your model documentation'
     }
   }
 
@@ -114,13 +126,13 @@ export function AIConfigForm({ onSubmit, onCancel, initialData, isLoading = fals
               onChange={(e) => {
                 updateField('provider', e.target.value)
                 updateField('model_name', e.target.value === 'openai' ? 'gpt-4' : 
-                           e.target.value === 'anthropic' ? 'claude-3-sonnet-20240229' : 'custom-model')
+                           e.target.value === 'anthropic' ? 'claude-3-sonnet-20240229' : '')
               }}
               className="w-full px-3 py-2 border border-input rounded-md bg-background text-foreground placeholder:text-muted-foreground focus:outline-none focus:ring-2 focus:ring-primary"
             >
               <option value="openai">OpenAI</option>
               <option value="anthropic">Anthropic</option>
-              <option value="custom">Custom</option>
+              <option value="openai_compatible">OpenAI Compatible</option>
             </select>
           </div>
 
@@ -151,16 +163,33 @@ export function AIConfigForm({ onSubmit, onCancel, initialData, isLoading = fals
           <label htmlFor="model_name" className="block text-sm font-medium mb-2">
             Model *
           </label>
-          <select
-            id="model_name"
-            value={formData.model_name}
-            onChange={(e) => updateField('model_name', e.target.value)}
-            className="w-full px-3 py-2 border border-input rounded-md bg-background text-foreground placeholder:text-muted-foreground focus:outline-none focus:ring-2 focus:ring-primary"
-          >
-            {getModelOptions().map(model => (
-              <option key={model} value={model}>{model}</option>
-            ))}
-          </select>
+          {formData.provider === 'openai_compatible' ? (
+            <input
+              id="model_name"
+              type="text"
+              value={formData.model_name}
+              onChange={(e) => updateField('model_name', e.target.value)}
+              placeholder="e.g., llama2, mistral, codellama, etc."
+              className="w-full px-3 py-2 border border-input rounded-md bg-background text-foreground placeholder:text-muted-foreground focus:outline-none focus:ring-2 focus:ring-primary"
+              required
+            />
+          ) : (
+            <select
+              id="model_name"
+              value={formData.model_name}
+              onChange={(e) => updateField('model_name', e.target.value)}
+              className="w-full px-3 py-2 border border-input rounded-md bg-background text-foreground placeholder:text-muted-foreground focus:outline-none focus:ring-2 focus:ring-primary"
+            >
+              {getModelOptions().map(model => (
+                <option key={model} value={model}>{model}</option>
+              ))}
+            </select>
+          )}
+          {formData.provider === 'openai_compatible' && (
+            <p className="text-xs text-muted-foreground mt-1">
+              Enter the exact model name your endpoint supports
+            </p>
+          )}
         </div>
 
         <div>
@@ -180,10 +209,10 @@ export function AIConfigForm({ onSubmit, onCancel, initialData, isLoading = fals
           </p>
         </div>
 
-        {formData.provider === 'custom' && (
+        {formData.provider === 'openai_compatible' && (
           <div>
             <label htmlFor="api_endpoint" className="block text-sm font-medium mb-2">
-              API Endpoint *
+              API Endpoint * (OpenAPI-compatible)
             </label>
             <input
               id="api_endpoint"
@@ -192,8 +221,11 @@ export function AIConfigForm({ onSubmit, onCancel, initialData, isLoading = fals
               onChange={(e) => updateField('api_endpoint', e.target.value)}
               placeholder="https://your-api.com/v1/completions"
               className="w-full px-3 py-2 border border-input rounded-md bg-background text-foreground placeholder:text-muted-foreground focus:outline-none focus:ring-2 focus:ring-primary"
-              required={formData.provider === 'custom'}
+              required={formData.provider === 'openai_compatible'}
             />
+            <p className="text-xs text-muted-foreground mt-1">
+              Any OpenAPI-compatible endpoint (e.g., Ollama, LM Studio, vLLM, LocalAI, or custom deployments)
+            </p>
           </div>
         )}
 
@@ -255,20 +287,48 @@ export function AIConfigForm({ onSubmit, onCancel, initialData, isLoading = fals
       <div className="space-y-4">
         <h3 className="text-lg font-semibold">MCP Integration</h3>
         
+        <div className="flex items-start gap-3 p-3 bg-muted/50 rounded-md border">
+          <div className="text-sm text-muted-foreground">
+            <span className="font-medium block mb-1">About MCP Capability:</span>
+            {getProviderDescription()}
+          </div>
+        </div>
+
+        <div className="flex items-center gap-2">
+          <input
+            id="mcp_capable"
+            type="checkbox"
+            checked={formData.mcp_capable}
+            onChange={(e) => {
+              const capable = e.target.checked
+              updateField('mcp_capable', capable)
+              // Auto-enable if model is capable, but allow user to disable
+              if (capable && !formData.mcp_enabled) {
+                updateField('mcp_enabled', true)
+              }
+            }}
+            className="rounded"
+          />
+          <label htmlFor="mcp_capable" className="text-sm font-medium">
+            Model supports MCP protocol
+          </label>
+        </div>
+
         <div className="flex items-center gap-2">
           <input
             id="mcp_enabled"
             type="checkbox"
             checked={formData.mcp_enabled}
             onChange={(e) => updateField('mcp_enabled', e.target.checked)}
-            className="rounded"
+            disabled={!formData.mcp_capable}
+            className="rounded disabled:opacity-50"
           />
           <label htmlFor="mcp_enabled" className="text-sm font-medium">
-            Enable Model Context Protocol (Recommended)
+            Enable MCP integration {!formData.mcp_capable && '(requires MCP-capable model)'}
           </label>
         </div>
 
-        {formData.mcp_enabled && (
+        {formData.mcp_enabled && formData.mcp_capable && (
           <div>
             <label htmlFor="mcp_server_url" className="block text-sm font-medium mb-2">
               MCP Server URL
@@ -281,6 +341,9 @@ export function AIConfigForm({ onSubmit, onCancel, initialData, isLoading = fals
               placeholder="http://localhost:8000"
               className="w-full px-3 py-2 border border-input rounded-md bg-background text-foreground placeholder:text-muted-foreground focus:outline-none focus:ring-2 focus:ring-primary"
             />
+            <p className="text-xs text-muted-foreground mt-1">
+              URL where your MCP server is running. See <a href="/mcp" className="text-primary hover:underline">MCP documentation</a> for setup.
+            </p>
           </div>
         )}
       </div>

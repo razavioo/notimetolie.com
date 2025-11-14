@@ -51,7 +51,49 @@ class ErrorHandlerMiddleware(BaseHTTPMiddleware):
             )
 
 
-app = FastAPI(title="No Time To Lie API", version="0.1.0", description="A Living Knowledge Infrastructure API")
+app = FastAPI(
+    title="No Time To Lie API",
+    version="1.0.0",
+    description="""
+# No Time To Lie - Living Knowledge Infrastructure API
+
+## Overview
+Production-ready API for modular, embeddable knowledge content management.
+
+## Core Features
+- **Blocks**: Atomic knowledge units with full CRUD
+- **Paths**: Structured learning journeys
+- **AI Agents**: Content creation with MCP support
+- **Search**: Full-text search
+- **Progress**: User mastery tracking
+- **Moderation**: Quality control
+
+## Authentication
+Bearer token required: `Authorization: Bearer <token>`
+
+## Rate Limits
+- Free: 100 req/min | Auth: 1000 req/min | AI: 50/day
+
+## Support
+- Docs: https://docs.notimetolie.com
+- Email: support@notimetolie.com
+""",
+    docs_url="/docs",
+    redoc_url="/redoc",
+    openapi_tags=[
+        {"name": "health", "description": "Health check and status"},
+        {"name": "auth", "description": "Authentication (login, OAuth)"},
+        {"name": "users", "description": "User management"},
+        {"name": "blocks", "description": "Knowledge blocks CRUD"},
+        {"name": "paths", "description": "Learning paths management"},
+        {"name": "search", "description": "Full-text search"},
+        {"name": "ai", "description": "AI agents and content generation"},
+        {"name": "progress", "description": "Progress tracking"},
+        {"name": "moderation", "description": "Content moderation"},
+    ],
+    contact={"name": "Support", "email": "support@notimetolie.com"},
+    license_info={"name": "Proprietary"},
+)
 
 app.add_middleware(ErrorHandlerMiddleware)
 app.add_middleware(

@@ -92,7 +92,7 @@ export interface AIConfiguration {
   id: string
   name: string
   description?: string
-  provider: 'openai' | 'anthropic' | 'custom'
+  provider: 'openai' | 'anthropic' | 'openai_compatible'
   agent_type: 'content_creator' | 'content_researcher' | 'content_editor' | 'course_designer'
   model_name: string
   temperature: number
@@ -105,7 +105,7 @@ export interface AIConfiguration {
 export interface AIConfigurationCreate {
   name: string
   description?: string
-  provider: 'openai' | 'anthropic' | 'custom'
+  provider: 'openai' | 'anthropic' | 'openai_compatible'
   agent_type: 'content_creator' | 'content_researcher' | 'content_editor' | 'course_designer'
   model_name: string
   api_key?: string
@@ -115,6 +115,7 @@ export interface AIConfigurationCreate {
   system_prompt?: string
   mcp_enabled?: boolean
   mcp_server_url?: string
+  mcp_capable?: boolean
   can_create_blocks?: boolean
   can_edit_blocks?: boolean
   can_search_web?: boolean
