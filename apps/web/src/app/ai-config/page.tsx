@@ -46,6 +46,7 @@ export default function AIConfigPage() {
   const [configs, setConfigs] = useState<AIConfig[]>([])
   const [isLoading, setIsLoading] = useState(true)
   const [showCreateForm, setShowCreateForm] = useState(false)
+  const [editingConfig, setEditingConfig] = useState<AIConfig | null>(null)
   const [activeJobs, setActiveJobs] = useState<AIJob[]>([])
   const [jobProgress, setJobProgress] = useState<Record<string, { progress: number; message: string }>>({})
   const [accessChecked, setAccessChecked] = useState(false)
@@ -136,6 +137,30 @@ export default function AIConfigPage() {
 
   const loadActiveJobs = async () => {
     // TODO: Implement fetching active jobs
+  }
+
+  const handleDeleteConfig = async (configId: string, configName: string) => {
+    if (!confirm(`Are you sure you want to delete "${configName}"? This action cannot be undone.`)) {
+      return
+    }
+
+    try {
+      const response = await api.deleteAIConfiguration(configId)
+      if (response.data !== undefined || !response.error) {
+        // Success - reload configurations
+        loadConfigurations()
+      } else {
+        alert(`Error: ${response.error || 'Failed to delete agent'}`)
+      }
+    } catch (error) {
+      console.error('Failed to delete agent:', error)
+      alert('Failed to delete agent. Please try again.')
+    }
+  }
+
+  const handleEditConfig = (config: AIConfig) => {
+    setEditingConfig(config)
+    setShowCreateForm(true)
   }
 
   const getAgentTypeLabel = (type: string) => {
@@ -312,14 +337,16 @@ export default function AIConfigPage() {
                     <Button
                       variant="ghost"
                       size="sm"
-                      onClick={() => {/* Edit config */}}
+                      onClick={() => handleEditConfig(config)}
+                      title="Edit configuration"
                     >
                       <Settings className="h-4 w-4" />
                     </Button>
                     <Button
                       variant="ghost"
                       size="sm"
-                      onClick={() => {/* Delete config */}}
+                      onClick={() => handleDeleteConfig(config.id, config.name)}
+                      title="Delete configuration"
                     >
                       <Trash2 className="h-4 w-4 text-red-600" />
                     </Button>
@@ -369,37 +396,59 @@ export default function AIConfigPage() {
         </div>
       )}
 
-      {/* Create Form Modal */}
+      {/* Create/Edit Form Modal */}
       {showCreateForm && (
         <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-50 p-4">
           <div className="bg-background rounded-lg max-w-3xl w-full max-h-[90vh] overflow-y-auto">
             <div className="p-6">
               <div className="flex justify-between items-center mb-6">
-                <h2 className="text-2xl font-bold">Create AI Agent</h2>
+                <h2 className="text-2xl font-bold">
+                  {editingConfig ? 'Edit AI Agent' : 'Create AI Agent'}
+                </h2>
                 <Button
                   variant="ghost"
                   size="sm"
-                  onClick={() => setShowCreateForm(false)}
+                  onClick={() => {
+                    setShowCreateForm(false)
+                    setEditingConfig(null)
+                  }}
                 >
                   <X className="h-5 w-5" />
                 </Button>
               </div>
               <AIConfigForm
+                initialData={editingConfig ? {
+                  name: editingConfig.name,
+                  description: editingConfig.description,
+                  provider: editingConfig.provider,
+                  agent_type: editingConfig.agent_type,
+                  model_name: editingConfig.model_name,
+                  temperature: editingConfig.temperature,
+                  max_tokens: editingConfig.max_tokens,
+                  mcp_enabled: editingConfig.mcp_enabled,
+                } : undefined}
                 onSubmit={async (data) => {
                   try {
-                    const response = await api.createAIConfiguration(data)
+                    const response = editingConfig
+                      ? await api.updateAIConfiguration(editingConfig.id, data)
+                      : await api.createAIConfiguration(data)
+                    
                     if (response.data) {
                       setShowCreateForm(false)
+                      setEditingConfig(null)
                       loadConfigurations()
                     } else {
-                      alert(`Error: ${response.error || 'Failed to create agent'}`)
+                      alert(`Error: ${response.error || `Failed to ${editingConfig ? 'update' : 'create'} agent`}`)
                     }
                   } catch (error) {
-                    console.error('Failed to create agent:', error)
-                    alert('Failed to create agent. Please try again.')
+                    console.error(`Failed to ${editingConfig ? 'update' : 'create'} agent:`, error)
+                    alert(`Failed to ${editingConfig ? 'update' : 'create'} agent. Please try again.`)
                   }
                 }}
-                onCancel={() => setShowCreateForm(false)}
+                onCancel={() => {
+                  setShowCreateForm(false)
+                  setEditingConfig(null)
+                }}
               />
             </div>
           </div>

@@ -194,6 +194,134 @@ async def list_ai_configurations(
     ]
 
 
+@router.get("/configurations/{config_id}", response_model=AIConfigPublic)
+async def get_ai_configuration(
+    config_id: str,
+    db: AsyncSession = Depends(get_db),
+    current_user: User = Depends(require_permission("use_ai_agents")),
+):
+    """Get a specific AI configuration."""
+    result = await db.execute(
+        select(AIConfiguration)
+        .filter(AIConfiguration.id == config_id)
+        .filter(AIConfiguration.user_id == current_user.id)
+    )
+    config = result.scalar_one_or_none()
+    
+    if not config:
+        raise HTTPException(
+            status_code=status.HTTP_404_NOT_FOUND,
+            detail="AI configuration not found"
+        )
+    
+    return AIConfigPublic(
+        id=str(config.id),
+        name=config.name,
+        description=config.description,
+        provider=config.provider,
+        agent_type=config.agent_type,
+        model_name=config.model_name,
+        temperature=config.temperature.get("value", 0.7),
+        max_tokens=config.max_tokens.get("value", 2000),
+        mcp_enabled=config.mcp_enabled,
+        is_active=config.is_active,
+        created_at=config.created_at.get("iso"),
+    )
+
+
+@router.put("/configurations/{config_id}", response_model=AIConfigPublic)
+async def update_ai_configuration(
+    config_id: str,
+    config_data: AIConfigCreate,
+    db: AsyncSession = Depends(get_db),
+    current_user: User = Depends(require_permission("use_ai_agents")),
+):
+    """Update an AI configuration."""
+    result = await db.execute(
+        select(AIConfiguration)
+        .filter(AIConfiguration.id == config_id)
+        .filter(AIConfiguration.user_id == current_user.id)
+    )
+    config = result.scalar_one_or_none()
+    
+    if not config:
+        raise HTTPException(
+            status_code=status.HTTP_404_NOT_FOUND,
+            detail="AI configuration not found"
+        )
+    
+    now = datetime.utcnow().isoformat()
+    
+    # Update fields
+    config.name = config_data.name
+    config.description = config_data.description
+    config.provider = config_data.provider
+    config.agent_type = config_data.agent_type
+    config.model_name = config_data.model_name
+    config.api_endpoint = config_data.api_endpoint
+    config.temperature = {"value": config_data.temperature}
+    config.max_tokens = {"value": config_data.max_tokens}
+    config.system_prompt = config_data.system_prompt
+    config.mcp_enabled = config_data.mcp_enabled
+    config.mcp_server_url = config_data.mcp_server_url
+    config.mcp_capable = config_data.mcp_capable
+    config.can_create_blocks = config_data.can_create_blocks
+    config.can_edit_blocks = config_data.can_edit_blocks
+    config.can_search_web = config_data.can_search_web
+    config.daily_request_limit = {"value": config_data.daily_request_limit}
+    config.updated_at = {"iso": now}
+    
+    # Encrypt API key if provided
+    if config_data.api_key:
+        config.api_key_encrypted = encrypt_api_key(config_data.api_key)
+    
+    await db.commit()
+    await db.refresh(config)
+    
+    return AIConfigPublic(
+        id=str(config.id),
+        name=config.name,
+        description=config.description,
+        provider=config.provider,
+        agent_type=config.agent_type,
+        model_name=config.model_name,
+        temperature=config.temperature.get("value", 0.7),
+        max_tokens=config.max_tokens.get("value", 2000),
+        mcp_enabled=config.mcp_enabled,
+        is_active=config.is_active,
+        created_at=config.created_at.get("iso"),
+    )
+
+
+@router.delete("/configurations/{config_id}", status_code=status.HTTP_204_NO_CONTENT)
+async def delete_ai_configuration(
+    config_id: str,
+    db: AsyncSession = Depends(get_db),
+    current_user: User = Depends(require_permission("use_ai_agents")),
+):
+    """Delete an AI configuration."""
+    result = await db.execute(
+        select(AIConfiguration)
+        .filter(AIConfiguration.id == config_id)
+        .filter(AIConfiguration.user_id == current_user.id)
+    )
+    config = result.scalar_one_or_none()
+    
+    if not config:
+        raise HTTPException(
+            status_code=status.HTTP_404_NOT_FOUND,
+            detail="AI configuration not found"
+        )
+    
+    # Soft delete by setting is_active to False
+    config.is_active = False
+    config.updated_at = {"iso": datetime.utcnow().isoformat()}
+    
+    await db.commit()
+    
+    return None
+
+
 @router.post("/jobs", response_model=AIJobPublic, status_code=status.HTTP_202_ACCEPTED)
 async def create_ai_job(
     job_data: AIJobCreate,
