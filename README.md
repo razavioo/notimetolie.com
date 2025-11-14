@@ -112,6 +112,45 @@ To create a knowledge ecosystem where:
 - **Node.js**: 18 or higher with npm
 - **Git**: 2.30+ (for version control)
 
+### Verify Prerequisites
+
+Before starting, verify your installation:
+
+```bash
+# Check Python version
+python3 --version
+# Should show: Python 3.12.x or higher
+
+# Check Node.js version
+node --version
+# Should show: v18.x.x or higher
+
+# Check npm
+npm --version
+# Should show: 9.x.x or higher
+
+# Find paths (if commands not found)
+which python3
+which node
+which npm
+```
+
+**Common Issues:**
+
+If commands are not found:
+```bash
+# macOS - Find Node.js installation
+find /usr/local -name "node" -type f 2>/dev/null
+# Usually at: /usr/local/bin/node
+
+# Add to PATH (if needed)
+export PATH="/usr/local/bin:$PATH"
+
+# Or create symbolic links
+sudo ln -s /path/to/node /usr/local/bin/node
+sudo ln -s /path/to/npm /usr/local/bin/npm
+```
+
 ### Installation
 
 ```bash
@@ -817,6 +856,186 @@ pytest tests/ -n auto
 - [ ] Mark blocks as mastered
 - [ ] Admin settings page
 - [ ] OAuth testing interface
+
+---
+
+## Troubleshooting
+
+### Common Setup Issues
+
+#### Issue 1: "npm: command not found"
+
+**Cause:** Node.js/npm not in PATH or not installed
+
+**Solution:**
+```bash
+# Find Node.js installation
+which node
+# If not found, locate it:
+find /usr/local -name "node" -type f 2>/dev/null
+
+# Add to PATH (add to ~/.bashrc or ~/.zshrc)
+export PATH="/usr/local/bin:$PATH"
+
+# Or use full path to run
+/usr/local/bin/node node_modules/.bin/next dev -p 3000
+```
+
+#### Issue 2: "Python not found" or "Module not found"
+
+**Cause:** Python not installed or virtual environment not activated
+
+**Solution:**
+```bash
+# Verify Python installation
+python3 --version
+
+# Recreate virtual environment
+cd apps/api
+python3 -m venv .venv
+source .venv/bin/activate
+pip install -r requirements.txt
+```
+
+#### Issue 3: Port Already in Use
+
+**Cause:** Previous server still running on port 8000 or 3000
+
+**Solution:**
+```bash
+# Find and kill process on port 8000
+lsof -i :8000
+kill -9 <PID>
+
+# Find and kill process on port 3000
+lsof -i :3000
+kill -9 <PID>
+
+# Or kill all
+pkill -f "uvicorn src.main:app"
+pkill -f "next-server"
+```
+
+#### Issue 4: Database Errors
+
+**Cause:** Database migrations not run or corrupted database
+
+**Solution:**
+```bash
+cd apps/api
+source .venv/bin/activate
+
+# Check current migration status
+alembic current
+
+# Run migrations
+alembic upgrade head
+
+# If corrupted, backup and reset
+mv notimetolie.db notimetolie.db.backup
+alembic upgrade head
+```
+
+#### Issue 5: "Module 'X' has no attribute 'Y'"
+
+**Cause:** Dependency version mismatch or outdated packages
+
+**Solution:**
+```bash
+# API dependencies
+cd apps/api
+source .venv/bin/activate
+pip install --upgrade -r requirements.txt
+
+# Web dependencies
+cd apps/web
+npm install
+# If issues persist:
+rm -rf node_modules package-lock.json
+npm install
+```
+
+#### Issue 6: WebSocket Connection Failed
+
+**Cause:** API server not running or CORS issues
+
+**Solution:**
+```bash
+# Verify API server is running
+curl http://localhost:8000/v1/health
+# Should return: {"status":"ok"}
+
+# Check CORS settings in apps/api/.env
+CORS_ORIGINS=http://localhost:3000
+
+# Restart API server
+```
+
+#### Issue 7: Google OAuth Not Working
+
+**Cause:** Missing environment variables or incorrect configuration
+
+**Solution:**
+```bash
+# Check environment variables
+# In apps/web/.env.local:
+NEXT_PUBLIC_GOOGLE_CLIENT_ID=your-client-id
+
+# In apps/api/.env:
+GOOGLE_CLIENT_ID=your-client-id
+GOOGLE_CLIENT_SECRET=your-client-secret
+
+# Configure in Google Cloud Console:
+# 1. Create OAuth 2.0 Client ID
+# 2. Add redirect URI: http://localhost:3000/api/auth/google/callback
+# 3. Copy Client ID and Secret to .env files
+```
+
+### Checking Server Status
+
+```bash
+# Check if servers are running
+lsof -i :8000  # API server
+lsof -i :3000  # Web server
+
+# Check server health
+curl http://localhost:8000/v1/health  # API
+curl http://localhost:3000             # Web
+
+# View logs (if running in background)
+tail -f /tmp/api.log
+tail -f /tmp/web.log
+```
+
+### Clean Start (Reset Everything)
+
+If nothing works, try a complete reset:
+
+```bash
+# Stop all servers
+pkill -f "uvicorn"
+pkill -f "next"
+
+# API cleanup
+cd apps/api
+rm -rf .venv __pycache__
+python3 -m venv .venv
+source .venv/bin/activate
+pip install -r requirements.txt
+alembic upgrade head
+
+# Web cleanup
+cd ../web
+rm -rf node_modules .next
+npm install
+
+# Start fresh
+# Terminal 1:
+cd apps/api && source .venv/bin/activate && uvicorn src.main:app --reload
+
+# Terminal 2:
+cd apps/web && npm run dev
+```
 
 ---
 
