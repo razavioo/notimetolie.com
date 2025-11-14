@@ -292,23 +292,25 @@ export default function BlockDetailPage() {
                 </div>
               </div>
               <div className="flex gap-2">
-                <button
-                  onClick={toggleMastery}
-                  disabled={isMasteryLoading}
-                  className={`text-sm px-3 py-1.5 rounded-md transition-colors ${
-                    isMastered
-                      ? 'text-green-700 dark:text-green-600 hover:bg-green-50 dark:hover:bg-green-950/30'
-                      : 'text-muted-foreground hover:text-green-700 dark:hover:text-green-600 hover:bg-green-50 dark:hover:bg-green-950/30'
-                  } disabled:opacity-50 disabled:cursor-not-allowed`}
-                >
-                  {isMasteryLoading ? (
-                    'Loading...'
-                  ) : isMastered ? (
-                    <>✓ I Know This</>
-                  ) : (
-                    <>I Know This</>
-                  )}
-                </button>
+                {api.getToken() && (
+                  <button
+                    onClick={toggleMastery}
+                    disabled={isMasteryLoading}
+                    className={`text-sm px-3 py-1.5 rounded-md transition-colors ${
+                      isMastered
+                        ? 'text-green-700 dark:text-green-600 hover:bg-green-50 dark:hover:bg-green-950/30'
+                        : 'text-muted-foreground hover:text-green-700 dark:hover:text-green-600 hover:bg-green-50 dark:hover:bg-green-950/30'
+                    } disabled:opacity-50 disabled:cursor-not-allowed`}
+                  >
+                    {isMasteryLoading ? (
+                      'Loading...'
+                    ) : isMastered ? (
+                      <>✓ I Know This</>
+                    ) : (
+                      <>I Know This</>
+                    )}
+                  </button>
+                )}
                 {hasPermission('create_blocks') && (
                   <button
                     onClick={() => setIsEditing(true)}
