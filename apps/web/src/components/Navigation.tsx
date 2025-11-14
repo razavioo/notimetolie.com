@@ -5,8 +5,13 @@ import { usePathname, useRouter } from 'next/navigation'
 import { useState, useEffect, useRef } from 'react'
 import { User, Settings, Sparkles, LogOut, ChevronDown, Moon, Sun, Shield } from 'lucide-react'
 import { useTheme } from 'next-themes'
-import { api } from '@/lib/api'
 import { useAuth } from '@/hooks/useAuth'
+import { 
+  getMainNavItems, 
+  canAccessItem, 
+  sortByOrder,
+  type NavigationItem 
+} from '@/config/navigation.config'
 
 interface ProfileDropdownProps {
   user: any
@@ -22,12 +27,10 @@ function ProfileDropdown({ user, hasPermission, hasRole, onLogout }: ProfileDrop
   const { theme, setTheme, resolvedTheme } = useTheme()
   const [mounted, setMounted] = useState(false)
 
-  // Avoid hydration mismatch for theme
   useEffect(() => {
     setMounted(true)
   }, [])
 
-  // Close dropdown when clicking outside
   useEffect(() => {
     function handleClickOutside(event: MouseEvent) {
       if (dropdownRef.current && !dropdownRef.current.contains(event.target as Node)) {
@@ -35,9 +38,19 @@ function ProfileDropdown({ user, hasPermission, hasRole, onLogout }: ProfileDrop
       }
     }
 
+    function handleEscape(event: KeyboardEvent) {
+      if (event.key === 'Escape') {
+        setIsOpen(false)
+      }
+    }
+
     if (isOpen) {
       document.addEventListener('mousedown', handleClickOutside)
-      return () => document.removeEventListener('mousedown', handleClickOutside)
+      document.addEventListener('keydown', handleEscape)
+      return () => {
+        document.removeEventListener('mousedown', handleClickOutside)
+        document.removeEventListener('keydown', handleEscape)
+      }
     }
   }, [isOpen])
 
@@ -53,10 +66,12 @@ function ProfileDropdown({ user, hasPermission, hasRole, onLogout }: ProfileDrop
 
   return (
     <div className="relative" ref={dropdownRef}>
-      {/* Profile Button */}
       <button
         onClick={() => setIsOpen(!isOpen)}
-        className="hidden md:flex items-center gap-2 px-3 py-2 rounded-full hover:bg-accent transition-colors"
+        aria-expanded={isOpen}
+        aria-haspopup="true"
+        aria-label="User menu"
+        className="hidden md:flex items-center gap-2 px-3 py-2 rounded-lg hover:bg-accent transition-colors"
       >
         <div className="w-8 h-8 rounded-full bg-primary/10 flex items-center justify-center">
           <User className="h-4 w-4 text-primary" />
@@ -72,10 +87,11 @@ function ProfileDropdown({ user, hasPermission, hasRole, onLogout }: ProfileDrop
         <ChevronDown className={`h-4 w-4 transition-transform ${isOpen ? 'rotate-180' : ''}`} />
       </button>
 
-      {/* Dropdown Menu */}
       {isOpen && (
-        <div className="absolute right-0 mt-2 w-56 bg-background border border-border rounded-lg shadow-lg py-2 z-[9999]">
-          {/* User Info Header */}
+        <div 
+          className="absolute right-0 mt-2 w-56 bg-background border border-border rounded-lg shadow-lg py-2 z-[9999]"
+          role="menu"
+        >
           <div className="px-4 py-2 border-b border-border">
             <div className="font-medium">{user.username}</div>
             <div className="text-xs text-muted-foreground">{user.email}</div>
@@ -88,7 +104,6 @@ function ProfileDropdown({ user, hasPermission, hasRole, onLogout }: ProfileDrop
             )}
           </div>
 
-          {/* Menu Items */}
           <div className="py-1">
             <button
               onClick={() => handleNavigation('/profile')}
@@ -104,7 +119,7 @@ function ProfileDropdown({ user, hasPermission, hasRole, onLogout }: ProfileDrop
                 className="w-full px-4 py-2 text-sm text-left hover:bg-accent flex items-center gap-2"
               >
                 <Sparkles className="h-4 w-4" />
-                AI Agents
+                AI Configuration
               </button>
             )}
 
@@ -113,7 +128,7 @@ function ProfileDropdown({ user, hasPermission, hasRole, onLogout }: ProfileDrop
               className="w-full px-4 py-2 text-sm text-left hover:bg-accent flex items-center gap-2"
             >
               <Settings className="h-4 w-4" />
-              Profile Settings
+              Settings
             </button>
 
             {hasRole(['admin']) && (
@@ -126,7 +141,6 @@ function ProfileDropdown({ user, hasPermission, hasRole, onLogout }: ProfileDrop
               </button>
             )}
 
-            {/* Theme Toggle */}
             <button
               onClick={() => setTheme(resolvedTheme === 'dark' ? 'light' : 'dark')}
               disabled={!mounted}
@@ -151,7 +165,6 @@ function ProfileDropdown({ user, hasPermission, hasRole, onLogout }: ProfileDrop
             </button>
           </div>
 
-          {/* Sign Out */}
           <div className="border-t border-border pt-1">
             <button
               onClick={handleLogoutClick}
@@ -167,14 +180,6 @@ function ProfileDropdown({ user, hasPermission, hasRole, onLogout }: ProfileDrop
   )
 }
 
-const navigation = [
-  { name: 'Blocks', href: '/blocks', roles: ['*'] },
-  { name: 'Paths', href: '/paths', roles: ['*'] },
-  { name: 'AI Create', href: '/ai-create', roles: ['builder', 'trusted_builder', 'moderator', 'admin'], permission: 'use_ai_agents' },
-  { name: 'Search', href: '/search', roles: ['*'] },
-  { name: 'Developers', href: '/developers', roles: ['*'] },
-]
-
 export function Navigation() {
   const pathname = usePathname()
   const router = useRouter()
@@ -182,30 +187,45 @@ export function Navigation() {
   const [mounted, setMounted] = useState(false)
   const { user, isAuthenticated, hasRole, hasPermission, logout } = useAuth()
 
-  // Avoid hydration mismatch by only filtering navigation after mount
   useEffect(() => {
     setMounted(true)
   }, [])
+
+  useEffect(() => {
+    setIsMenuOpen(false)
+  }, [pathname])
 
   const handleLogout = () => {
     logout()
     router.push('/')
   }
 
-  const canSeeNavItem = (item: any) => {
-    if (item.roles.includes('*')) return true
-    if (!isAuthenticated) return false
-    const hasRequiredRole = item.roles.some((role: string) => hasRole(role))
-    // If item has a permission requirement, check it
-    if (item.permission && !hasPermission(item.permission)) return false
-    return hasRequiredRole
+  // Get navigation items from configuration
+  const allNavItems = getMainNavItems()
+  
+  // Filter items based on user permissions
+  const getUserPermissions = (): string[] => {
+    if (!user) return []
+    const rolePermissions: Record<string, string[]> = {
+      admin: ['*'],
+      moderator: ['view', 'create_blocks', 'create_paths', 'create_suggestions', 'review_suggestions', 'moderate_content', 'use_ai_agents'],
+      trusted_builder: ['view', 'create_blocks', 'create_paths', 'create_suggestions', 'review_suggestions', 'use_ai_agents'],
+      builder: ['view', 'create_blocks', 'create_paths', 'create_suggestions', 'use_ai_agents'],
+      guest: ['view', 'create_suggestions']
+    }
+    return rolePermissions[user.role] || []
   }
 
-  // Show all navigation items on server/initial render to avoid hydration mismatch
-  const visibleNavItems = mounted ? navigation.filter(canSeeNavItem) : navigation
+  const visibleNavItems = mounted 
+    ? sortByOrder(
+        allNavItems.filter(item => 
+          canAccessItem(item, user?.role, getUserPermissions())
+        )
+      )
+    : allNavItems
 
   return (
-    <nav className="border-b bg-background/95 backdrop-blur supports-[backdrop-filter]:bg-background/60 relative z-50">
+    <nav className="border-b bg-background/95 backdrop-blur supports-[backdrop-filter]:bg-background/60 sticky top-0 z-50">
       <div className="container mx-auto px-4">
         <div className="flex h-16 items-center justify-between">
           <div className="flex items-center space-x-8">
@@ -217,24 +237,29 @@ export function Navigation() {
 
             {/* Desktop Navigation */}
             <div className="hidden md:flex space-x-6">
-              {visibleNavItems.map((item) => (
-                <Link
-                  key={item.name}
-                  href={item.href}
-                  className={`px-3 py-2 text-sm font-medium transition-all duration-200 hover:text-primary ${
-                    pathname === item.href
-                      ? 'text-primary font-semibold'
-                      : 'text-muted-foreground'
-                  }`}
-                >
-                  {item.name}
-                </Link>
-              ))}
+              {visibleNavItems.map((item) => {
+                const Icon = item.icon
+                const isActive = pathname === item.href
+                
+                return (
+                  <Link
+                    key={item.id}
+                    href={item.href}
+                    title={item.description}
+                    className={`px-3 py-2 text-sm font-medium transition-colors ${
+                      isActive
+                        ? 'text-primary font-semibold'
+                        : 'text-muted-foreground hover:text-primary'
+                    }`}
+                  >
+                    {item.label}
+                  </Link>
+                )
+              })}
             </div>
           </div>
 
           <div className="flex items-center space-x-4">
-            {/* Auth Status - Profile Dropdown or Sign In */}
             {isAuthenticated && user ? (
               <ProfileDropdown 
                 user={user} 
@@ -255,7 +280,7 @@ export function Navigation() {
             <button
               onClick={() => setIsMenuOpen(!isMenuOpen)}
               className="md:hidden p-2 rounded-md text-muted-foreground hover:text-foreground hover:bg-gray-100 transition-colors"
-              aria-label="Toggle navigation menu"
+              aria-label="Toggle menu"
             >
               <svg
                 className="h-6 w-6"
@@ -287,22 +312,25 @@ export function Navigation() {
         {isMenuOpen && (
           <div className="md:hidden border-t bg-background">
             <div className="px-2 pt-2 pb-3 space-y-1">
-              {visibleNavItems.map((item) => (
-                <Link
-                  key={item.name}
-                  href={item.href}
-                  onClick={() => setIsMenuOpen(false)}
-                  className={`block px-3 py-2 rounded-md text-base font-medium transition-colors ${
-                    pathname === item.href
-                      ? 'bg-primary/10 text-primary'
-                      : 'text-muted-foreground hover:text-foreground hover:bg-gray-100'
-                  }`}
-                >
-                  {item.name}
-                </Link>
-              ))}
+              {visibleNavItems.map((item) => {
+                const isActive = pathname === item.href
+                
+                return (
+                  <Link
+                    key={item.id}
+                    href={item.href}
+                    onClick={() => setIsMenuOpen(false)}
+                    className={`block px-3 py-2 rounded-md text-base font-medium transition-colors ${
+                      isActive
+                        ? 'bg-primary/10 text-primary'
+                        : 'text-muted-foreground hover:text-foreground hover:bg-gray-100'
+                    }`}
+                  >
+                    {item.label}
+                  </Link>
+                )
+              })}
 
-              {/* Mobile Auth */}
               {isAuthenticated && user ? (
                 <div className="px-3 py-2 border-t space-y-2">
                   <Link
@@ -328,13 +356,6 @@ export function Navigation() {
                   </button>
                 </div>
               ) : null}
-
-              {/* Mobile Theme Toggle */}
-              <div className="px-3 py-2 border-t">
-                <div className="flex justify-center">
-                  <ThemeToggle />
-                </div>
-              </div>
             </div>
           </div>
         )}
