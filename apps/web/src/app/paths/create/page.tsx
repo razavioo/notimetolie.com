@@ -193,21 +193,41 @@ export default function CreatePathPage() {
               <div className="space-y-2 max-h-[500px] overflow-y-auto">
                 {isLoading ? (
                   <p className="text-sm text-muted-foreground text-center py-4">Loading blocks...</p>
+                ) : availableBlocks.length === 0 ? (
+                  <div className="text-center py-8">
+                    <p className="text-sm text-muted-foreground mb-2">No blocks available</p>
+                    <p className="text-xs text-muted-foreground">Create some blocks first to build paths</p>
+                  </div>
                 ) : filteredBlocks.length === 0 ? (
-                  <p className="text-sm text-muted-foreground text-center py-4">
-                    {searchQuery ? 'No matching blocks' : 'All blocks added'}
-                  </p>
+                  <div className="text-center py-8">
+                    {searchQuery ? (
+                      <>
+                        <p className="text-sm text-muted-foreground mb-2">No blocks match "{searchQuery}"</p>
+                        <p className="text-xs text-muted-foreground">Try a different search term</p>
+                      </>
+                    ) : (
+                      <>
+                        <p className="text-sm text-muted-foreground mb-2">All blocks added to path</p>
+                        <p className="text-xs text-muted-foreground">Great! You've included all available blocks</p>
+                      </>
+                    )}
+                  </div>
                 ) : (
-                  filteredBlocks.map(block => (
-                    <div
-                      key={block.id}
-                      className="p-3 border border-border rounded-md hover:bg-accent cursor-pointer transition-colors"
-                      onClick={() => addBlock(block)}
-                    >
-                      <div className="font-medium text-sm">{block.title}</div>
-                      <div className="text-xs text-muted-foreground mt-1">{block.slug}</div>
-                    </div>
-                  ))
+                  <>
+                    <p className="text-xs text-muted-foreground mb-2 px-1">
+                      {filteredBlocks.length} block{filteredBlocks.length !== 1 ? 's' : ''} found
+                    </p>
+                    {filteredBlocks.map(block => (
+                      <div
+                        key={block.id}
+                        className="p-3 border border-border rounded-md hover:bg-accent cursor-pointer transition-colors"
+                        onClick={() => addBlock(block)}
+                      >
+                        <div className="font-medium text-sm">{block.title}</div>
+                        <div className="text-xs text-muted-foreground mt-1">{block.slug}</div>
+                      </div>
+                    ))}
+                  </>
                 )}
               </div>
             </div>

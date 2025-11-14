@@ -65,10 +65,18 @@ export default function PathDetailPage() {
       if (response.data || !response.error) {
         // Reload progress to update UI
         await loadUserProgress()
+        // Also reload path data to ensure mastered field is updated
+        await loadPath()
         toast({
           type: 'success',
           title: 'Path Completed!',
           description: `All ${path.blocks?.length || 0} blocks in this path are now marked as mastered.`
+        })
+      } else {
+        toast({
+          type: 'error',
+          title: 'Failed to mark path as mastered',
+          description: response.error || 'Please try again later.'
         })
       }
     } catch (error) {
