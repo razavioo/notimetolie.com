@@ -312,9 +312,97 @@ Summarize these findings and suggest what additional content is needed."""
         job: AIJob,
         config: AIConfiguration
     ) -> None:
-        """Process content editor job."""
-        # TODO: Implement content editing logic
-        job.output_data = {"message": "Content editor not yet implemented"}
+        """Process content editor job - improves existing content"""
+        from src.models import ContentNode
+        
+        # Extract block ID from input metadata
+        block_id = job.input_metadata.get("block_id") if job.input_metadata else None
+        if not block_id:
+            raise ValueError("block_id required in input_metadata for content editor")
+        
+        # Load the block
+        result = await self.db.execute(
+            select(ContentNode).filter(ContentNode.id == block_id)
+        )
+        block = result.scalar_one_or_none()
+        if not block:
+            raise ValueError(f"Block {block_id} not found")
+        
+        # Create provider
+        api_key = decrypt_api_key(config.api_key_encrypted) if config.api_key_encrypted else None
+        provider = create_ai_provider(
+            config.provider.value,
+            api_key or os.getenv(f"{config.provider.value.upper()}_API_KEY", ""),
+            config.model_name,
+            config.api_endpoint
+        )
+        
+        # Build editing prompt
+        prompt = f"""Edit and improve the following content block:
+
+Title: {block.title}
+Content:
+{block.content}
+
+Editing instructions: {job.input_prompt}
+
+Provide improved version that:
+- Fixes any errors or unclear language
+- Improves readability and structure
+- Maintains the original meaning
+- Follows the specific instructions given"""
+        
+        result = await provider.generate(
+            prompt,
+            system_prompt="You are a content editor. Improve clarity, correctness, and readability while preserving the original intent.",
+            temperature=config.temperature.get("value", 0.5),  # Lower temperature for editing
+            max_tokens=config.max_tokens.get("value", 2000)
+        )
+        
+        if result.get("error"):
+            raise Exception(f"AI provider error: {result['error']}")
+        
+        if not result.get("content"):
+            raise Exception("AI provider returned no content")
+        
+        # Store the edited version as suggestion
+        job.output_data = {
+            "original_block_id": str(block_id),
+            "edited_content": result.get("content"),
+            "editing_notes": f"Applied edits based on: {job.input_prompt}"
+        }
+        job.tokens_used = result.get("tokens_used", {})
+        
+        # Create edit suggestion
+        await self._create_edit_suggestion(job, block, result.get("content"))
+    
+    async def _create_edit_suggestion(
+        self,
+        job: AIJob,
+        original_block,
+        edited_content: str
+    ) -> None:
+        """Create edit suggestion for existing block"""
+        suggestion = AIBlockSuggestion(
+            id=str(uuid.uuid4()),
+            ai_job_id=job.id,
+            user_id=job.user_id,
+            title=f"[EDIT] {original_block.title}",
+            slug=original_block.slug,
+            content=edited_content,
+            block_type=original_block.block_type,
+            language=original_block.language or "en",
+            tags=original_block.tags or [],
+            source_urls=[],
+            confidence_score={"value": 0.85},  # Higher confidence for edits
+            ai_rationale=f"Edited based on: {job.input_prompt}",
+            status="pending",
+            created_at={"iso": datetime.utcnow().isoformat()},
+            updated_at={"iso": datetime.utcnow().isoformat()},
+        )
+        
+        self.db.add(suggestion)
+        await self.db.commit()
     
     async def _process_course_designer(
         self,
@@ -384,9 +472,10 @@ Create a structured course outline using these blocks and suggest any missing bl
         # Generate slug
         slug = title.lower().replace(" ", "-")[:50]
         
-        # Extract source URLs if mentioned in content
-        source_urls = []
-        # TODO: Extract URLs from content
+        # Extract source URLs from content
+        import re
+        url_pattern = r'https?://(?:www\.)?[-a-zA-Z0-9@:%._\+~#=]{1,256}\.[a-zA-Z0-9()]{1,6}\b(?:[-a-zA-Z0-9()@:%_\+.~#?&/=]*)'
+        source_urls = list(set(re.findall(url_pattern, content)))[:5]  # Limit to 5 URLs
         
         # Create suggestion
         suggestion = AIBlockSuggestion(
@@ -400,7 +489,7 @@ Create a structured course outline using these blocks and suggest any missing bl
             language=job.input_metadata.get("language", "en") if job.input_metadata else "en",
             tags=job.input_metadata.get("tags", []) if job.input_metadata else [],
             source_urls=source_urls,
-            confidence_score={"value": 0.8},  # TODO: Calculate actual confidence
+            confidence_score=self._calculate_confidence_score(content, existing_blocks),
             ai_rationale=f"Created based on user request: {job.input_prompt}",
             status="pending",
             created_at={"iso": datetime.utcnow().isoformat()},
@@ -409,6 +498,36 @@ Create a structured course outline using these blocks and suggest any missing bl
         
         self.db.add(suggestion)
         await self.db.commit()
+    
+    def _calculate_confidence_score(self, content: str, existing_blocks: List[Dict]) -> Dict[str, float]:
+        """Calculate confidence score based on content quality indicators"""
+        score = 0.7  # Base score
+        
+        # Increase score if content has good structure
+        if len(content.split("\n")) > 3:  # Multiple paragraphs
+            score += 0.05
+        
+        if "```" in content:  # Contains code blocks
+            score += 0.05
+        
+        # Increase score if references existing blocks
+        if len(existing_blocks) > 0:
+            score += 0.05
+        
+        # Increase score if has URLs/sources
+        import re
+        urls = re.findall(r'https?://[^\s]+', content)
+        if len(urls) > 0:
+            score += 0.05
+        
+        # Penalize if content is very short (might be incomplete)
+        if len(content) < 100:
+            score -= 0.15
+        
+        # Cap at 0.95 (never fully confident for AI-generated content)
+        score = min(0.95, max(0.3, score))
+        
+        return {"value": score}
 
 
 async def process_ai_job_background(

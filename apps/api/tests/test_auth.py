@@ -14,7 +14,7 @@ async def test_create_user(db_session: AsyncSession):
     user_data = {
         "username": "testuser",
         "email": "test@example.com",
-        "password": "testpassword123",
+        "password": "TestPassword123",  # Updated to meet password requirements
         "full_name": "Test User"
     }
 
@@ -38,12 +38,12 @@ async def test_authenticate_user(db_session: AsyncSession):
         db_session,
         username="authuser",
         email="auth@example.com",
-        password="authpassword123"
+        password="AuthPassword123"  # Updated to meet password requirements
     )
 
     # Test successful authentication
     authenticated_user = await auth_manager.authenticate_user(
-        db_session, "authuser", "authpassword123"
+        db_session, "authuser", "AuthPassword123"
     )
     assert authenticated_user is not None
     assert authenticated_user.id == user.id
@@ -69,7 +69,7 @@ async def test_get_user_by_username(db_session: AsyncSession):
         db_session,
         username="getuser",
         email="get@example.com",
-        password="getpassword123"
+        password="getPassword123"
     )
 
     # Get user by username
@@ -90,7 +90,7 @@ async def test_get_user_by_email(db_session: AsyncSession):
         db_session,
         username="emailuser",
         email="email@example.com",
-        password="emailpassword123"
+        password="emailPassword123"
     )
 
     # Get user by email
@@ -111,7 +111,7 @@ async def test_rbac_permissions(db_session: AsyncSession):
         db_session,
         username="admin",
         email="admin@example.com",
-        password="adminpassword123"
+        password="adminPassword123"
     )
     admin_user.role = UserRole.ADMIN
     await db_session.commit()
@@ -120,7 +120,7 @@ async def test_rbac_permissions(db_session: AsyncSession):
         db_session,
         username="builder",
         email="builder@example.com",
-        password="builderpassword123"
+        password="builderPassword123"
     )
     builder_user.role = UserRole.BUILDER
     await db_session.commit()
@@ -142,7 +142,7 @@ async def test_rbac_role_assignment(db_session: AsyncSession):
         db_session,
         username="roleuser",
         email="role@example.com",
-        password="rolepassword123"
+        password="rolePassword123"
     )
 
     # Test role assignment
@@ -161,7 +161,7 @@ async def test_rbac_role_assignment(db_session: AsyncSession):
 @pytest.mark.asyncio
 async def test_password_hashing():
     """Test password hashing and verification"""
-    password = "testpassword123"
+    password = "testPassword123"
     hashed_password = auth_manager.get_password_hash(password)
 
     # Verify the hash is different from the original password

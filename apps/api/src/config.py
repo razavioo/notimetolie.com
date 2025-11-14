@@ -1,6 +1,8 @@
 from pydantic_settings import BaseSettings
-from pydantic import Field
+from pydantic import Field, validator, field_validator
 from typing import List, Optional
+import secrets
+import warnings
 
 
 class Settings(BaseSettings):
@@ -10,6 +12,15 @@ class Settings(BaseSettings):
     debug: bool = False
     environment: str = "development"
     api_v1_prefix: str = "/v1"
+    
+    @field_validator("environment")
+    @classmethod
+    def validate_environment(cls, v):
+        """Validate environment setting"""
+        valid_envs = ["development", "test", "staging", "production"]
+        if v not in valid_envs:
+            raise ValueError(f"environment must be one of {valid_envs}")
+        return v
 
     # Database
     database_url: str = Field("sqlite+aiosqlite:///./notimetolie.db", alias="DATABASE_URL")
@@ -26,10 +37,41 @@ class Settings(BaseSettings):
     meilisearch_test_master_key: Optional[str] = None
 
     # Security
-    secret_key: str = "your-secret-key-change-in-production"
+    secret_key: str = Field(
+        default_factory=lambda: secrets.token_urlsafe(32),
+        description="Secret key for JWT signing - MUST be set in production"
+    )
     algorithm: str = "HS256"
     access_token_expire_minutes: int = 30
     refresh_token_expire_days: int = 7
+    
+    @field_validator("secret_key")
+    @classmethod
+    def validate_secret_key(cls, v, info):
+        """Ensure secret key is secure in production"""
+        # Get environment from values if available
+        environment = info.data.get("environment", "development")
+        
+        # In production, secret key must be strong
+        if environment == "production":
+            if not v or len(v) < 32:
+                raise ValueError("secret_key must be at least 32 characters in production")
+            
+            # Warn about common insecure values
+            insecure_values = [
+                "your-secret-key-change-in-production",
+                "dev-secret-key",
+                "secret",
+                "password",
+                "changeme",
+            ]
+            if any(insecure in v.lower() for insecure in insecure_values):
+                raise ValueError(
+                    "secret_key contains insecure values. "
+                    "Generate a strong random key using: python -c 'import secrets; print(secrets.token_urlsafe(32))'"
+                )
+        
+        return v
 
     # Google OAuth
     google_client_id: Optional[str] = None

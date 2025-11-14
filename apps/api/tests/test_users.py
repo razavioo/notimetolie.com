@@ -13,7 +13,7 @@ async def test_register_user(client: AsyncClient, db_session: AsyncSession):
     user_data = {
         "username": "newuser",
         "email": "newuser@example.com",
-        "password": "newpassword123",
+        "password": "newPassword123",
         "full_name": "New User"
     }
 
@@ -45,14 +45,14 @@ async def test_register_duplicate_username(client: AsyncClient, db_session: Asyn
         db_session,
         username="existinguser",
         email="existing@example.com",
-        password="password123"
+        password="Password123"
     )
 
     # Try to register with same username
     user_data = {
         "username": "existinguser",  # Same username
         "email": "different@example.com",
-        "password": "password123",
+        "password": "Password123",
         "full_name": "Different User"
     }
 
@@ -71,14 +71,14 @@ async def test_register_duplicate_email(client: AsyncClient, db_session: AsyncSe
         db_session,
         username="emailuser",
         email="emailuser@example.com",
-        password="password123"
+        password="Password123"
     )
 
     # Try to register with same email
     user_data = {
         "username": "differentuser",
         "email": "emailuser@example.com",  # Same email
-        "password": "password123",
+        "password": "Password123",
         "full_name": "Different User"
     }
 
@@ -97,12 +97,12 @@ async def test_login_success(client: AsyncClient, db_session: AsyncSession):
         db_session,
         username="loginuser",
         email="login@example.com",
-        password="loginpassword123"
+        password="loginPassword123"
     )
 
     login_data = {
         "username": "loginuser",
-        "password": "loginpassword123"
+        "password": "loginPassword123"
     }
 
     response = await client.post("/v1/users/login", data=login_data)
@@ -121,12 +121,12 @@ async def test_login_wrong_password(client: AsyncClient, db_session: AsyncSessio
         db_session,
         username="wrongpassuser",
         email="wrongpass@example.com",
-        password="correctpassword123"
+        password="correctPassword123"
     )
 
     login_data = {
         "username": "wrongpassuser",
-        "password": "wrongpassword123"  # Wrong password
+        "password": "wrongPassword123"  # Wrong password
     }
 
     response = await client.post("/v1/users/login", data=login_data)
@@ -141,7 +141,7 @@ async def test_login_nonexistent_user(client: AsyncClient):
     """Test login with non-existent user"""
     login_data = {
         "username": "nonexistent",
-        "password": "password123"
+        "password": "Password123"
     }
 
     response = await client.post("/v1/users/login", data=login_data)
@@ -159,12 +159,12 @@ async def test_get_current_user(client: AsyncClient, db_session: AsyncSession):
         db_session,
         username="currentuser",
         email="current@example.com",
-        password="currentpassword123"
+        password="currentPassword123"
     )
 
     login_data = {
         "username": "currentuser",
-        "password": "currentpassword123"
+        "password": "currentPassword123"
     }
 
     login_response = await client.post("/v1/users/login", data=login_data)
@@ -212,7 +212,7 @@ async def test_get_users_admin_only(client: AsyncClient, db_session: AsyncSessio
         db_session,
         username="regular",
         email="regular@example.com",
-        password="regularpassword123"
+        password="regularPassword123"
     )
 
     # Create admin user
@@ -220,7 +220,7 @@ async def test_get_users_admin_only(client: AsyncClient, db_session: AsyncSessio
         db_session,
         username="admin",
         email="admin@example.com",
-        password="adminpassword123"
+        password="adminPassword123"
     )
     admin_user.role = UserRole.ADMIN
     await db_session.commit()
@@ -228,7 +228,7 @@ async def test_get_users_admin_only(client: AsyncClient, db_session: AsyncSessio
     # Login as regular user
     regular_login_data = {
         "username": "regular",
-        "password": "regularpassword123"
+        "password": "regularPassword123"
     }
     regular_login_response = await client.post("/v1/users/login", data=regular_login_data)
     regular_token = regular_login_response.json()["access_token"]
@@ -243,7 +243,7 @@ async def test_get_users_admin_only(client: AsyncClient, db_session: AsyncSessio
     # Login as admin user
     admin_login_data = {
         "username": "admin",
-        "password": "adminpassword123"
+        "password": "adminPassword123"
     }
     admin_login_response = await client.post("/v1/users/login", data=admin_login_data)
     admin_token = admin_login_response.json()["access_token"]

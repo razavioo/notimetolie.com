@@ -20,7 +20,7 @@ async def get_current_user_ws(
     db: AsyncSession = Depends(get_db)
 ) -> User:
     """
-    Get current user from WebSocket token parameter.
+    Get current user from WebSocket token parameter with proper JWT validation.
     
     Args:
         token: JWT token from query parameter
@@ -28,24 +28,58 @@ async def get_current_user_ws(
     
     Returns:
         User object
-    """
-    # TODO: Implement proper JWT token validation
-    # For now, using a simplified version
-    from src.dependencies import get_current_user
-    from fastapi import Request
     
-    # Create a mock request with authorization header
-    class MockRequest:
-        def __init__(self, token):
-            self.headers = {"authorization": f"Bearer {token}"}
+    Raises:
+        HTTPException: If authentication fails
+    """
+    from src.auth import jwt_manager
+    from fastapi import HTTPException, status
     
     try:
-        # In production, properly decode JWT and get user
-        # This is a placeholder
-        return None  # Replace with actual user validation
-    except Exception as e:
-        logger.error(f"WebSocket auth error: {e}")
+        # Verify JWT token
+        payload = jwt_manager.verify_token(token)
+        if not payload:
+            raise HTTPException(
+                status_code=status.HTTP_401_UNAUTHORIZED,
+                detail="Invalid or expired token"
+            )
+        
+        # Extract user ID from payload
+        user_id = payload.get("sub")
+        if not user_id:
+            raise HTTPException(
+                status_code=status.HTTP_401_UNAUTHORIZED,
+                detail="Invalid token payload"
+            )
+        
+        # Load user from database
+        result = await db.execute(
+            select(User).filter(User.id == user_id)
+        )
+        user = result.scalar_one_or_none()
+        
+        if not user:
+            raise HTTPException(
+                status_code=status.HTTP_401_UNAUTHORIZED,
+                detail="User not found"
+            )
+        
+        if not user.is_active:
+            raise HTTPException(
+                status_code=status.HTTP_403_FORBIDDEN,
+                detail="User account is inactive"
+            )
+        
+        return user
+        
+    except HTTPException:
         raise
+    except Exception as e:
+        logger.error(f"WebSocket auth error: {e}", exc_info=True)
+        raise HTTPException(
+            status_code=status.HTTP_401_UNAUTHORIZED,
+            detail="Authentication failed"
+        )
 
 
 @router.websocket("/ws")

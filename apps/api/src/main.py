@@ -1,11 +1,20 @@
 from fastapi import FastAPI, HTTPException, Request, Response
 from fastapi.middleware.cors import CORSMiddleware
+from fastapi.middleware.gzip import GZipMiddleware
 from fastapi.responses import JSONResponse
 import logging
+import sys
 from starlette.middleware.base import BaseHTTPMiddleware
 from starlette.exceptions import HTTPException as StarletteHTTPException
 
 from .config import settings
+from .middleware.rate_limiting import RateLimitMiddleware
+from .middleware.security import (
+    SecurityHeadersMiddleware,
+    RequestIDMiddleware,
+    RequestLoggingMiddleware,
+    InputSanitizationMiddleware,
+)
 from .routers import users_router, blocks_router, paths_router, search_router, moderation_router, embed_router, progress_router
 from .routers import websocket as websocket_router
 from .routers import ai_config as ai_router
@@ -26,8 +35,15 @@ from .events.events import (
 )
 
 
-# Configure logging
-logging.basicConfig(level=logging.INFO)
+# Configure structured logging
+logging.basicConfig(
+    level=logging.INFO if settings.environment != "production" else logging.WARNING,
+    format='%(asctime)s - %(name)s - %(levelname)s - %(message)s',
+    handlers=[
+        logging.StreamHandler(sys.stdout),
+        logging.FileHandler(f"{settings.app_name.lower().replace(' ', '_')}.log") if settings.environment == "production" else logging.NullHandler()
+    ]
+)
 logger = logging.getLogger(__name__)
 
 
@@ -95,14 +111,37 @@ Bearer token required: `Authorization: Bearer <token>`
     license_info={"name": "Proprietary"},
 )
 
-app.add_middleware(ErrorHandlerMiddleware)
+# Add middlewares in correct order (last added = first executed)
+# 1. CORS (allow cross-origin requests)
 app.add_middleware(
     CORSMiddleware,
     allow_origins=settings.cors_origins.split(","),
     allow_credentials=True,
-    allow_methods=["*"],
+    allow_methods=["GET", "POST", "PUT", "DELETE", "PATCH", "OPTIONS"],
     allow_headers=["*"],
+    expose_headers=["X-Request-ID", "X-RateLimit-Limit", "X-RateLimit-Remaining", "X-Response-Time"],
 )
+
+# 2. Compression (reduce response size)
+app.add_middleware(GZipMiddleware, minimum_size=1000)
+
+# 3. Security headers
+app.add_middleware(SecurityHeadersMiddleware)
+
+# 4. Request ID tracking
+app.add_middleware(RequestIDMiddleware)
+
+# 5. Request logging
+app.add_middleware(RequestLoggingMiddleware)
+
+# 6. Input sanitization
+app.add_middleware(InputSanitizationMiddleware)
+
+# 7. Rate limiting (protect against abuse)
+app.add_middleware(RateLimitMiddleware)
+
+# 8. Error handling (catch all errors)
+app.add_middleware(ErrorHandlerMiddleware)
 
 # Mount routers under versioned prefixes (limit to what tests need)
 app.include_router(users_router, prefix="/v1", tags=["users"])
@@ -119,7 +158,43 @@ app.include_router(ai_router.router, tags=["ai"])
 
 @app.get("/v1/health")
 async def health():
-    return {"status": "ok"}
+    """Basic health check endpoint"""
+    return {"status": "ok", "version": settings.app_version}
+
+
+@app.get("/v1/health/detailed")
+async def health_detailed():
+    """Detailed health check with dependency status"""
+    from .database import AsyncSessionLocal
+    import time
+    
+    health_status = {
+        "status": "healthy",
+        "version": settings.app_version,
+        "environment": settings.environment,
+        "timestamp": time.time(),
+        "checks": {}
+    }
+    
+    # Check database
+    try:
+        async with AsyncSessionLocal() as db:
+            await db.execute("SELECT 1")
+        health_status["checks"]["database"] = {"status": "healthy"}
+    except Exception as e:
+        health_status["checks"]["database"] = {"status": "unhealthy", "error": str(e)}
+        health_status["status"] = "degraded"
+    
+    # Check Meilisearch (optional)
+    try:
+        from .services.search import search_client
+        if search_client:
+            health = await search_client.health()
+            health_status["checks"]["search"] = {"status": "healthy"}
+    except Exception:
+        health_status["checks"]["search"] = {"status": "unavailable"}
+    
+    return health_status
 
 
 @app.on_event("startup")

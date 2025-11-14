@@ -16,7 +16,7 @@ async def test_create_block(db_session: AsyncSession):
         db_session,
         username="blockcreator",
         email="creator@example.com",
-        password="creatorpassword123"
+        password="creatorPassword123"
     )
 
     block_data = {
@@ -49,7 +49,7 @@ async def test_create_path(db_session: AsyncSession):
         db_session,
         username="pathcreator",
         email="pathcreator@example.com",
-        password="pathcreatorpassword123"
+        password="pathcreatorPassword123"
     )
 
     path_data = {
@@ -80,7 +80,7 @@ async def test_block_path_relationship(db_session: AsyncSession):
         db_session,
         username="relationshipuser",
         email="relationship@example.com",
-        password="relationshippassword123"
+        password="relationshipPassword123"
     )
 
     # Create a path
@@ -127,7 +127,7 @@ async def test_block_uniqueness_constraints(db_session: AsyncSession):
         db_session,
         username="constraintuser",
         email="constraint@example.com",
-        password="constraintpassword123"
+        password="constraintPassword123"
     )
 
     # Create first block
@@ -164,7 +164,7 @@ async def test_user_content_relationship(db_session: AsyncSession):
         db_session,
         username="contentuser",
         email="content@example.com",
-        password="contentpassword123"
+        password="contentPassword123"
     )
 
     # Create multiple content nodes
@@ -214,7 +214,7 @@ async def test_content_metadata(db_session: AsyncSession):
         db_session,
         username="metadatauser",
         email="metadata@example.com",
-        password="metadatapassword123"
+        password="metadataPassword123"
     )
 
     # Create block with metadata

@@ -3,6 +3,7 @@ import { Inter } from 'next/font/google'
 import { Navigation } from '@/components/Navigation'
 import { ToastProvider } from '@/components/ToastProvider'
 import { ThemeProvider } from '@/components/ThemeProvider'
+import { ErrorBoundary } from '@/components/ErrorBoundary'
 import './globals.css'
 
 const inter = Inter({ subsets: ['latin'] })
@@ -20,12 +21,14 @@ export default function RootLayout({
   return (
     <html lang="en" suppressHydrationWarning>
       <body className={inter.className}>
-        <ThemeProvider attribute="class" defaultTheme="system" enableSystem>
-          <ToastProvider>
-            <Navigation />
-            <main>{children}</main>
-          </ToastProvider>
-        </ThemeProvider>
+        <ErrorBoundary>
+          <ThemeProvider attribute="class" defaultTheme="system" enableSystem>
+            <ToastProvider>
+              <Navigation />
+              <main>{children}</main>
+            </ToastProvider>
+          </ThemeProvider>
+        </ErrorBoundary>
       </body>
     </html>
   )
