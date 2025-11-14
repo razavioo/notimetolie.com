@@ -1,334 +1,167 @@
+# No Time To Lie
 
-# **Project: No Time To Lie - A Living Knowledge Infrastructure**
+> **A Living Knowledge Infrastructure for the Modern World**
 
-> A Living Knowledge Infrastructure for the modern world. Create, organize, and share knowledge with powerful tools designed for collaboration and discovery.
+[![API Status](https://img.shields.io/badge/API-v1.0.0-blue.svg)](http://localhost:8000/docs)
+[![License](https://img.shields.io/badge/license-Proprietary-red.svg)](LICENSE)
+[![Python](https://img.shields.io/badge/python-3.12+-green.svg)](https://python.org)
+[![Next.js](https://img.shields.io/badge/next.js-14+-black.svg)](https://nextjs.org)
+
+Create, organize, and share modular knowledge with powerful AI-assisted tools designed for collaboration, quality, and perpetual accuracy.
 
 ---
 
-## **Quick Start**
+## Table of Contents
+
+- [Overview](#overview)
+- [Key Features](#key-features)
+- [Quick Start](#quick-start)
+- [Architecture](#architecture)
+- [Technology Stack](#technology-stack)
+- [Project Structure](#project-structure)
+- [Core Concepts](#core-concepts)
+- [AI-Assisted Content Creation](#ai-assisted-content-creation)
+- [API Documentation](#api-documentation)
+- [Development](#development)
+- [Testing](#testing)
+- [Deployment](#deployment)
+- [Contributing](#contributing)
+- [License](#license)
+
+---
+
+## Overview
+
+**No Time To Lie** is a Living Knowledge Infrastructure platform that delivers verifiable, factual knowledge in a modular, perpetually up-to-date, and embeddable format. We serve as the **Single Source of Truth (SSoT)** for procedural "How-To" guides and factual knowledge.
+
+### Mission
+
+To create a knowledge ecosystem where:
+- Every piece of information is traceable and verifiable
+- Content evolves in sync with real-world changes
+- Users get complete answers without jumping between multiple conflicting sources
+- Businesses can embed production-ready content without maintenance overhead
+
+### Value Propositions
+
+**For End-Users (B2C):**
+- 🎯 **Guaranteed Accuracy**: Every piece of information is traceable and verifiable
+- 🔄 **Continuous Updates**: Content evolves in real-time
+- 🎨 **Seamless Experience**: Complete answers without source hopping
+
+**For Businesses (B2B):**
+- 📦 **Content-as-a-Service**: Embeddable content via API or SDK
+- 🚀 **Zero Maintenance**: No in-house content team needed
+- ⚡ **99.9% Uptime SLA**: Production-grade reliability
+
+---
+
+## Key Features
+
+### 🧱 Modular Content Architecture
+- **Blocks**: Atomic, reusable units of knowledge with unique URLs
+- **Paths**: Ordered collections forming complete learning journeys
+- **Rich Editor**: BlockNote-powered WYSIWYG with code syntax highlighting
+- **Transclusion**: Embed blocks within other content
+
+### 🤖 AI-Powered Content Creation
+- **Multiple AI Agents**: OpenAI, Anthropic, or custom API support
+- **Model Context Protocol (MCP)**: Context-aware content generation
+- **Agent Types**: Content Creator, Researcher, Editor, Course Designer
+- **Smart Suggestions**: AI searches existing content to avoid duplication
+- **Quality Control**: Human review required for all AI-generated content
+
+### 🔍 Advanced Search & Discovery
+- **Full-text Search**: Powered by Meilisearch
+- **Semantic Search**: Find related content intelligently
+- **Faceted Filtering**: By tags, difficulty, language, type
+- **Real-time Indexing**: Instant search updates
+
+### 📊 Progress Tracking & Gamification
+- **Mastery System**: Mark blocks and paths as mastered
+- **Progress Dashboard**: Visual learning journey tracking
+- **XP & Levels**: Earn experience through contributions
+- **Badges**: Unlock achievements and recognition
+
+### 🛡️ Quality Assurance
+- **Pre-moderation**: New content requires approval
+- **Edit Suggestions**: Git-style pull request workflow
+- **Community Flags**: Report issues or outdated content
+- **Revision History**: Complete audit trail
+- **Trusted Builder System**: Earn autonomy through contributions
+
+### 🔐 Authentication & Authorization
+- **Email/Password**: Traditional authentication
+- **Google OAuth**: One-click social login
+- **RBAC + ABAC**: Hybrid permission system
+- **Roles**: Guest, Builder, Trusted Builder, Moderator, Admin
+
+### ⚙️ Admin Configuration
+- **Settings Dashboard**: Site-wide configuration (admin only)
+- **OAuth Management**: Configure Google OAuth with testing
+- **Analytics**: User activity and content metrics
+- **Moderation Queue**: Review flags and suggestions
+
+---
+
+## Quick Start
+
+### Prerequisites
+
+- **Python**: 3.12 or higher
+- **Node.js**: 18 or higher with npm
+- **Git**: 2.30+ (for version control)
+
+### Installation
 
 ```bash
-# 1. Clone and install dependencies
+# 1. Clone repository
 git clone <repository-url>
 cd notimetolie.com
+
+# 2. Install dependencies
 npm install
 
-# 2. Set up API
+# 3. Set up API
 cd apps/api
 python3 -m venv .venv
-source .venv/bin/activate
+source .venv/bin/activate  # Windows: .venv\Scripts\activate
 pip install -r requirements.txt
+
+# 4. Configure environment
 cp .env.example .env
+# Edit .env with your configuration
+
+# 5. Initialize database
 alembic upgrade head
 
-# 3. Start services (in separate terminals)
-# Terminal 1 - API
-cd apps/api && source .venv/bin/activate && uvicorn src.main:app --reload --host 0.0.0.0 --port 8000
-
-# Terminal 2 - Web
-cd apps/web && npm run dev
+# 6. Set up web app
+cd ../web
+npm install
 ```
 
-📍 **API:** http://localhost:8000 | **Docs:** http://localhost:8000/docs  
-📍 **Web:** http://localhost:3000
+### Running the Application
 
-### **Quick Test**
+**Development Mode (Recommended):**
+
 ```bash
-# Run the test script to verify everything is working
-./test_api.sh
+# Terminal 1 - API Server
+cd apps/api
+source .venv/bin/activate
+uvicorn src.main:app --reload --host 0.0.0.0 --port 8000
 
-# Or test manually
-curl http://localhost:8000/v1/health    # Should return {"status":"ok"}
-curl http://localhost:8000/v1/blocks    # Should return [] (empty array)
+# Terminal 2 - Web App
+cd apps/web
+npm run dev
 ```
 
----
+**Access Points:**
+- **Web App**: http://localhost:3000
+- **API**: http://localhost:8000
+- **API Docs**: http://localhost:8000/docs (Interactive Swagger UI)
+- **ReDoc**: http://localhost:8000/redoc (Alternative documentation)
 
-## **Table of Contents**
-
-1.  [**Core Vision & Strategy**](#1-core-vision--strategy)
-    *   [1.1. Mission Statement](#11-mission-statement)
-    *   [1.2. Core Value Propositions](#12-core-value-propositions)
-    *   [1.3. Content Scope](#13-content-scope)
-2.  [**Information Architecture & Data Model**](#2-information-architecture--data-model)
-    *   [2.1. Official Glossary](#21-official-glossary)
-    *   [2.2. Content Architecture: A Flexible Two-Level Hierarchy](#22-content-architecture)
-    *   [2.3. Block Types Specification](#23-block-types-specification)
-    *   [2.4. Database Schema Design](#24-database-schema-design)
-3.  [**Technical Architecture & Technology Stack**](#3-technical-architecture--technology-stack)
-    *   [3.1. High-Level System Architecture](#31-high-level-system-architecture)
-    *   [3.2. Final Technology Stack (Q4 2025 Stable Releases)](#32-final-technology-stack)
-    *   [3.3. Model Context Protocol (MCP) Implementation](#33-model-context-protocol-mcp-implementation)
-4.  [**Key Systems & Integration Strategy**](#4-key-systems--integration-strategy)
-    *   [4.1. Event-Driven Architecture for Seamless Integration](#41-event-driven-architecture)
-    *   [4.2. Permission System: Hybrid RBAC + ABAC Model](#42-permission-system)
-5.  [**User Experience & Operational Flows**](#5-user-experience--operational-flows)
-    *   [5.1. Content Creation Flow](#51-content-creation-flow)
-    *   [5.2. Edit Suggestion Flow](#52-edit-suggestion-flow)
-    *   [5.3. Content Embedding Flow](#53-content-embedding-flow)
-6.  [**Content Strategy & Quality Control**](#6-content-strategy--quality-control)
-    *   [6.1. Quality Assurance (QA) Process](#61-quality-assurance-qa-process)
-    *   [6.2. The Role of AI: The Smart Assistant](#62-the-role-of-ai)
-7.  [**Monetization & Gamification Model**](#7-monetization--gamification-model)
-    *   [7.1. Gamification Engine: Progression through Contribution](#71-gamification-engine)
-    *   [7.2. Multi-Layered Monetization Strategy](#72-multi-layered-monetization-strategy)
-8.  [**Project Structure & Implementation Guidelines**](#8-project-structure--implementation-guidelines)
-    *   [8.1. Monorepo Directory Structure](#81-monorepo-directory-structure)
-    *   [8.2. Getting Started](#82-getting-started)
-    *   [8.3. Coding Standards & Conventions](#83-coding-standards--conventions)
-    *   [8.4. Project Documentation Rules](#84-project-documentation-rules)
-    *   [8.5. Development Workflow](#85-development-workflow)
-    *   [8.6. Current Application Structure](#86-current-application-structure)
-    *   [8.7. AI-Assisted Content Creation](#87-ai-assisted-content-creation)
-9.  [**Operational Requirements & SLA**](#9-operational-requirements--sla)
-10. [**Why Build From Scratch? A Strategic Analysis**](#10-why-build-from-scratch)
-11. [**Appendix: Core API Endpoints**](#11-appendix-core-api-endpoints)
-
----
-
-## **1. Core Vision & Strategy**
-
-### **1.1. Mission Statement**
-"No Time To Lie" is a **Living Knowledge Infrastructure** designed to deliver verifiable, factual knowledge in a modular, perpetually up-to-date, and embeddable format. We are the **Single Source of Truth (SSoT)** for procedural "How-To" guides and factual knowledge.
-
-### **1.2. Core Value Propositions**
-*   **For End-Users (B2C):**
-    *   **Guaranteed Accuracy:** Every piece of information is traceable and verifiable.
-    *   **Continuous Updates:** Content evolves in sync with real-world changes.
-    *   **Seamless Experience:** No more jumping between multiple, often conflicting, websites to get a complete answer.
-
-*   **For Businesses & Websites (B2B):**
-    *   **Content-as-a-Service (CaaS):** Production-ready, embeddable content via API or SDK.
-    *   **Zero Maintenance:** Eliminates the need for an in-house content team to create or maintain guides.
-    *   **Guaranteed SLA:** 99.9% uptime and dedicated technical support.
-
-### **1.3. Content Scope**
-*   ✅ **Allowed Content:** Software and technical tutorials, administrative and legal guides, step-by-step processes with clear outcomes, and verifiable factual information.
-*   ❌ **Disallowed Content:** Personal opinions, controversial or political articles, non-expert health advice, sexually explicit or violent material, and any content whose veracity cannot be objectively proven.
-
-## **2. Information Architecture & Data Model**
-
-### **2.1. Official Glossary**
-*   **Block:** The smallest atomic unit of knowledge. Each Block is self-contained, meaningful, and has a unique URL.
-*   **Path:** An ordered collection of Blocks that form a complete guide or learning journey. A Path is analogous to a "page" or a "course."
-*   **Builder:** A registered and verified user who contributes to the knowledge ecosystem.
-*   **Revision:** A snapshot of a Block's history. Every change, major or minor, is stored as a new Revision.
-*   **Edit Suggestion:** A proposed change to a Block, similar to a Pull Request in Git.
-
-### **2.2. Content Architecture: A Flexible Two-Level Hierarchy**
-The data architecture is based on a self-referencing model, currently constrained to two levels to ensure simplicity and performance:
-*   **Level 0 (Path):** An entity that serves as a container for children.
-*   **Level 1 (Block):** An entity that cannot have its own children.
-This model is implemented to be flexible; the depth constraint can be increased in the future with a single configuration change (`MAX_DEPTH`) if the product strategy requires it, without needing a fundamental data model migration.
-
-### **2.3. Block Types Specification**
-The content editor will support a rich set of block types, including: Text (with full formatting), Image (with optimization), Video (embeds), Code Snippet (with syntax highlighting), External Link, Internal Link, **Embedded Block** (transclusion), Callouts, and Tables.
-
-### **2.4. Database Schema Design**
-The core schema is centered around a `content_nodes` table, supported by tables for revisions, suggestions, and user feedback. All tables will use UUIDs as primary keys. Timestamps will follow the ISO 8601 standard and be stored in UTC.
-
-*(For detailed SQL `CREATE TABLE` statements, refer to the previous response's comprehensive schema design, which remains valid for this version.)*
-
-## **3. Technical Architecture & Technology Stack**
-
-### **3.1. High-Level System Architecture**
-The architecture is a multi-layered system designed for scalability and maintainability. It features a decoupled frontend, a central API Gateway, a business logic layer composed of logical microservices, and a robust data layer. An **Event Bus** orchestrates asynchronous communication between services.
-
-*(A visual diagram representing this architecture would be placed here in a real README.)*
-
-### **3.2. Final Technology Stack (Q4 2025 Stable Releases)**
-*   **Backend:**
-    *   **Language:** Python 3.14
-    *   **Framework:** FastAPI ~0.115.0
-    *   **ORM:** SQLAlchemy 2.1 (async)
-    *   **Validation:** Pydantic 2.8
-
-*   **Frontend:**
-    *   **Framework:** Next.js 16 (App Router)
-    *   **Language:** TypeScript 5.7
-    *   **Styling:** Tailwind CSS 4.x
-    *   **Editor:** **BlockNote**
-
-*   **Data Tier:**
-    *   **Primary DB:** PostgreSQL 18
-    *   **Search Engine:** Meilisearch 1.9
-    *   **Cache & Queue:** Redis 8.0
-    *   **File Storage:** MinIO (S3-compatible, self-hosted)
-
-*   **Infrastructure & DevOps:**
-    *   **Containerization:** Docker Engine + Docker Compose
-    *   **Reverse Proxy:** Nginx (Mainline)
-    *   **Monitoring:** Prometheus, Grafana (LTS)
-    *   **Operations:** Sentry, Plausible Analytics, Apprise (self-hosted)
-    *   **CI/CD:** GitHub Actions
-
-### **3.3. Model Context Protocol (MCP) Implementation**
-Our REST APIs will serve as the foundation. To support MCP, a FastAPI middleware will be developed to automatically wrap Pydantic-based responses into a rich, structured JSON-LD format compliant with schema.org. This facilitates machine-to-machine interaction and enhances SEO.
-
-## **4. Key Systems & Integration Strategy**
-
-### **4.1. Event-Driven Architecture for Seamless Integration**
-To manage complexity and ensure decoupling, all inter-service communication is handled by an Event Bus.
-*   **Key Events:** `BlockCreated`, `BlockUpdated`, `SuggestionSubmitted`, `FlagRaised`, `UserLeveledUp`, `RevisionCreated`.
-*   **Listener Services:**
-    *   **Search Service:** Subscribes to content events to keep Meilisearch in sync.
-    *   **Gamification Service:** Subscribes to contribution events to award XP.
-    *   **Notification Service:** Subscribes to key events to notify users.
-    *   **Audit Service:** Subscribes to all events to maintain a comprehensive audit log.
-
-### **4.2. Permission System: Hybrid RBAC + ABAC Model**
-A hybrid model provides both broad role-based access and fine-grained, attribute-based control.
-*   **Roles (RBAC):** Guest, Builder, Trusted Builder, Moderator, Admin.
-*   **Attribute-Based Logic (ABAC):** Complex permissions are determined dynamically based on user attributes (e.g., XP score) and content attributes (e.g., "locked" status).
-
-## **5. User Experience & Operational Flows**
-
-### **5.1. Content Creation Flow**
-A streamlined, two-step process:
-1.  **Create Block:** The Builder creates a new unit of knowledge in a focused, distraction-free block editor.
-2.  **Compose Path:** The Builder uses a visual interface to search for, select, and arrange Blocks into a coherent Path using drag-and-drop.
-
-### **5.2. Edit Suggestion Flow**
-1.  A Builder clicks "Suggest an Edit" on a Block.
-2.  A sandboxed version of the editor opens with the Block's content.
-3.  The Builder makes changes and writes a mandatory "Change Summary."
-4.  The suggestion is submitted, triggering notifications to the content owner and moderators.
-5.  Upon approval, a new Revision is created, and the original Block is updated. Moderators can approve or reject suggestions via `/v1/moderation/suggestions/{id}/approve` and `/v1/moderation/suggestions/{id}/reject`. Approved suggestions award XP to the author and update the block content.
-
-### **5.3. Content Embedding Flow**
-Every public Path and Block will have a "Share" panel providing a simple `iframe` snippet and a more advanced JavaScript SDK for embedding. The content served is always the latest approved revision.
-
-## **6. Content Strategy & Quality Control**
-
-### **6.1. Quality Assurance (QA) Process**
-*   **Pre-Moderation:** New content from standard Builders requires approval from a Moderator or Trusted Builder before publication.
-*   **Stale Content Review:** An automated system flags content that hasn't been updated for a set period (e.g., 6 months) for mandatory review.
-*   **Community Feedback Loop:** Flags submitted by any user are triaged in a moderation dashboard, prioritized by severity and frequency.
-
-### **6.2. The Role of AI: The Smart Assistant**
-AI functions as a powerful **assistant** to empower human Builders, not replace them.
-*   **Use Cases:** Brainstorming, structuring content, improving clarity, and generating translation drafts.
-*   **Golden Rule:** Every piece of AI-assisted content must be reviewed, edited, and explicitly approved by a human Builder before publication.
-
-## **7. Monetization & Gamification Model**
-
-### **7.1. Gamification Engine: Progression through Contribution**
-*   **Core System:** Based on Experience Points (XP), Levels, and Badges.
-*   **Progression Logic:** Earning XP through positive contributions unlocks higher permission levels, granting more autonomy and trust within the system.
-
-### **7.2. Multi-Layered Monetization Strategy**
-*   **Primary Model (B2B):** A subscription-based CaaS model for embedding content. Includes a generous free tier (e.g., up to 1,000 views/month) and paid plans for higher traffic.
-*   **Secondary Model (B2C - Future):** Introduction of a Premium subscription for end-users, offering access to exclusive content, advanced AI tools, and in-depth analytics.
-*   **XP vs. Money:**
-    *   **XP:** Used for reputation, unlocking permissions, and earning discounts on subscriptions.
-    *   **Real Money:** Required for purchasing subscriptions.
-    *   **Revenue Sharing:** Any rev-share model with top Builders will be based solely on actual revenue generated.
-
-## **8. Project Structure & Implementation Guidelines**
-
-### **8.1. Monorepo Directory Structure**
-A monorepo structure will be used to manage the entire project, facilitating code sharing and streamlined CI/CD.
-
-```
-/notimetolie
-├── .github/              # CI/CD workflows
-├── apps/
-│   ├── api/              # FastAPI application
-│   │   ├── src/          # Source code
-│   │   │   ├── main.py   # FastAPI app entry point
-│   │   │   ├── routers/  # API route handlers
-│   │   │   ├── events/   # Event bus and listeners
-│   │   │   ├── models/   # Database models
-│   │   │   └── config.py # Configuration management
-│   │   ├── alembic/      # Database migrations
-│   │   ├── tests/        # API tests
-│   │   ├── .venv/        # Python virtual environment
-│   │   └── requirements.txt
-│   └── web/              # Next.js application
-│       ├── src/          # Source code
-│       │   ├── app/      # Next.js App Router pages
-│       │   ├── components/ # React components
-│       │   └── types/    # TypeScript types
-│       └── package.json
-├── packages/
-│   ├── ui/               # Shared React components (shadcn/ui)
-│   ├── config/           # Shared configurations (ESLint, TSConfig)
-│   └── shared-types/     # Shared Pydantic/Zod types
-├── infrastructure/
-│   ├── docker/           # Dockerfiles and docker-compose.yml
-│   └── terraform/        # Infrastructure as Code (optional)
-├── docs/                 # Project documentation
-├── .gitignore
-├── package.json          # Root workspace configuration
-└── README.md
-```
-
-### **8.2. Getting Started**
-
-#### **Prerequisites**
-*   Python 3.12+ (currently using 3.12.3)
-*   Node.js 18+ with npm
-*   Git
-
-#### **Installation**
-
-1. **Clone the repository:**
-   ```bash
-   git clone <repository-url>
-   cd notimetolie.com
-   ```
-
-2. **Install frontend dependencies:**
-   ```bash
-   npm install
-   ```
-
-3. **Set up the API:**
-   ```bash
-   cd apps/api
-   
-   # Create and activate virtual environment
-   python3 -m venv .venv
-   source .venv/bin/activate  # On Windows: .venv\Scripts\activate
-   
-   # Install Python dependencies
-   pip install -r requirements.txt
-   
-   # Copy environment configuration
-   cp .env.example .env
-   # Edit .env file with your configuration
-   
-   # Run database migrations
-   alembic upgrade head
-   ```
-
-4. **Set up the web app:**
-   ```bash
-   cd apps/web
-   npm install
-   ```
-
-#### **Running the Application**
-
-**Option 1: Manual (Development)**
-
-1. **Start the API server:**
-   ```bash
-   cd apps/api
-   source .venv/bin/activate
-   uvicorn src.main:app --reload --host 0.0.0.0 --port 8000
-   ```
-   API will be available at: http://localhost:8000
-   API documentation: http://localhost:8000/docs
-
-2. **Start the web app (in a new terminal):**
-   ```bash
-   cd apps/web
-   npm run dev
-   ```
-   Web app will be available at: http://localhost:3000
-
-**Option 2: Using Docker Compose**
+**Docker Compose (Production-like):**
 
 ```bash
 # Build and start all services
@@ -337,346 +170,832 @@ docker-compose up -d
 # View logs
 docker-compose logs -f
 
-# Stop all services
+# Stop services
 docker-compose down
 ```
 
-**Option 3: NPM Scripts (from root directory)**
+---
 
-```bash
-# Start API server
-npm run dev:api
+## Architecture
 
-# Start web app
-npm run dev:web
+### High-Level Overview
 
-# Run both with Docker
-npm run docker:up
+```
+┌─────────────────────────────────────────────────────────────┐
+│                       Frontend (Next.js)                     │
+│  ┌──────────────┐  ┌──────────────┐  ┌──────────────┐      │
+│  │   Blocks     │  │    Paths     │  │  AI Agents   │      │
+│  └──────────────┘  └──────────────┘  └──────────────┘      │
+└─────────────────────────────────────────────────────────────┘
+                            │
+                            ▼
+┌─────────────────────────────────────────────────────────────┐
+│                      API Gateway (FastAPI)                   │
+│  ┌──────────────┐  ┌──────────────┐  ┌──────────────┐      │
+│  │    Auth      │  │   Content    │  │   AI Jobs    │      │
+│  └──────────────┘  └──────────────┘  └──────────────┘      │
+└─────────────────────────────────────────────────────────────┘
+                            │
+            ┌───────────────┼───────────────┐
+            ▼               ▼               ▼
+    ┌──────────────┐ ┌──────────────┐ ┌──────────────┐
+    │  PostgreSQL  │ │ Meilisearch  │ │    Redis     │
+    │   (Primary)  │ │   (Search)   │ │ (Cache/Queue)│
+    └──────────────┘ └──────────────┘ └──────────────┘
 ```
 
-#### **Available Scripts**
+### Event-Driven Architecture
 
-*   `npm run dev:api` - Start the FastAPI development server
-*   `npm run dev:web` - Start the Next.js development server
-*   `npm run build` - Build all workspace applications
-*   `npm run lint` - Run ESLint across the project
-*   `npm run format` - Format code with Prettier
-*   `npm run test` - Run all tests
-*   `npm run docker:build` - Build Docker images
-*   `npm run docker:up` - Start services with Docker Compose
-*   `npm run docker:down` - Stop Docker services
+All inter-service communication uses an **Event Bus** for decoupling:
 
-### **8.3. Coding Standards & Conventions**
-*   **Backend:** PEP 8, Black for formatting, isort for imports, and type hinting via Pydantic.
-*   **Frontend:** Prettier for formatting, ESLint for linting, and Conventional Commits for Git messages.
-*   **API:** Adherence to RESTful principles. All endpoints will be versioned (`/v1/...`).
+```python
+# Example: Block created event
+bus.publish(BlockCreated(
+    block_id="123",
+    title="Python Async/Await",
+    user_id="user-456"
+))
 
-### **8.4. Project Documentation Rules**
+# Multiple listeners react:
+# - Search Service: Updates Meilisearch index
+# - Gamification Service: Awards XP to user
+# - Notification Service: Notifies followers
+# - Audit Service: Logs event
+```
 
-**📋 Documentation Convention:**
-- **Only `README.md` files are allowed** in the project
-- All project documentation must be consolidated into relevant `README.md` files
-- Do NOT create separate `.md` files (e.g., `CHANGELOG.md`, `IMPLEMENTATION_SUMMARY.md`, `DEPLOYMENT_GUIDE.md`, etc.)
-- Keep documentation close to the code it describes
+**Key Events:**
+- `BlockCreated`, `BlockUpdated`, `BlockDeleted`
+- `PathCreated`, `PathUpdated`, `PathDeleted`
+- `SuggestionCreated`, `SuggestionApproved`, `SuggestionRejected`
+- `FlagRaised`, `FlagResolved`
+- `UserLeveledUp`, `BadgeEarned`
 
-**Rationale:** 
-- Centralized documentation in README files prevents documentation sprawl
-- Easier to maintain and keep up-to-date
-- Clear single source of truth for each component/feature
-- AI assistants (like Droid) and developers should reference and update README.md files only
+---
 
-**Where to Document:**
-- **Project root**: `/README.md` - Main project documentation (this file)
-- **API module**: `/apps/api/README.md` - API-specific setup and conventions
-- **Web app**: `/apps/web/README.md` - Frontend-specific documentation
-- **Packages**: `/packages/*/README.md` - Individual package documentation
-- **Scripts**: `/apps/api/scripts/README.md` - Script-specific documentation
+## Technology Stack
 
-### **8.5. Development Workflow**
+### Backend
 
-#### **Database Migrations**
+| Technology | Version | Purpose |
+|------------|---------|---------|
+| **Python** | 3.12+ | Programming language |
+| **FastAPI** | 0.115+ | Web framework with async support |
+| **SQLAlchemy** | 2.1+ | ORM with async engine |
+| **Pydantic** | 2.8+ | Data validation |
+| **Alembic** | 1.13+ | Database migrations |
+| **PostgreSQL** | 15+ | Primary database (SQLite for dev) |
+| **Meilisearch** | 1.9+ | Full-text search engine |
+| **Redis** | 7.0+ | Caching and job queue |
 
-When you modify database models, create and apply migrations:
+### Frontend
+
+| Technology | Version | Purpose |
+|------------|---------|---------|
+| **Next.js** | 14+ | React framework with App Router |
+| **TypeScript** | 5.7+ | Type safety |
+| **Tailwind CSS** | 3.4+ | Utility-first styling |
+| **BlockNote** | 0.15+ | Rich text editor |
+| **shadcn/ui** | Latest | Component library |
+| **Lucide Icons** | Latest | Icon system |
+
+### Infrastructure
+
+| Technology | Purpose |
+|------------|---------|
+| **Docker** | Containerization |
+| **Docker Compose** | Multi-container orchestration |
+| **Nginx** | Reverse proxy & load balancer |
+| **GitHub Actions** | CI/CD pipeline |
+
+---
+
+## Project Structure
+
+```
+notimetolie.com/
+├── apps/
+│   ├── api/                          # FastAPI backend
+│   │   ├── src/
+│   │   │   ├── main.py              # App entry point
+│   │   │   ├── config.py            # Configuration management
+│   │   │   ├── routers/             # API route handlers
+│   │   │   │   ├── blocks.py        # Blocks CRUD
+│   │   │   │   ├── paths.py         # Paths CRUD
+│   │   │   │   ├── ai_config.py     # AI configuration
+│   │   │   │   ├── auth.py          # Authentication
+│   │   │   │   └── users.py         # User management
+│   │   │   ├── models/              # SQLAlchemy models
+│   │   │   │   ├── user.py
+│   │   │   │   ├── content_node.py
+│   │   │   │   └── ai_configuration.py
+│   │   │   ├── services/            # Business logic
+│   │   │   │   ├── ai_providers.py  # AI integrations
+│   │   │   │   ├── search.py        # Meilisearch
+│   │   │   │   └── auth.py          # Auth utilities
+│   │   │   ├── events/              # Event bus
+│   │   │   │   ├── bus.py           # Event dispatcher
+│   │   │   │   ├── events.py        # Event definitions
+│   │   │   │   └── listeners.py     # Event handlers
+│   │   │   └── utils/               # Helpers
+│   │   ├── alembic/                 # DB migrations
+│   │   ├── tests/                   # API tests (59 tests)
+│   │   ├── requirements.txt         # Python dependencies
+│   │   └── .env                     # Environment config
+│   │
+│   └── web/                         # Next.js frontend
+│       ├── src/
+│       │   ├── app/                 # Next.js App Router
+│       │   │   ├── page.tsx         # Homepage
+│       │   │   ├── blocks/          # Blocks pages
+│       │   │   ├── paths/           # Paths pages
+│       │   │   ├── ai-config/       # AI management
+│       │   │   │   ├── page.tsx     # Agent list
+│       │   │   │   └── [id]/create/ # Use agent
+│       │   │   └── settings/        # Admin settings
+│       │   ├── components/          # React components
+│       │   │   ├── ui/              # shadcn/ui components
+│       │   │   ├── Navigation.tsx   # Main nav
+│       │   │   ├── AIAssistant.tsx  # AI interface
+│       │   │   └── BlockEditor.tsx  # Content editor
+│       │   ├── lib/                 # Utilities
+│       │   │   ├── api.ts           # API client
+│       │   │   └── utils.ts         # Helpers
+│       │   └── types/               # TypeScript types
+│       ├── public/                  # Static assets
+│       ├── package.json             # Dependencies
+│       └── next.config.js           # Next.js config
+│
+├── docs/                            # Documentation
+│   └── AI_AGENT_IMPROVEMENTS.md     # AI features guide
+│
+├── infrastructure/                  # DevOps
+│   └── docker/                      # Docker configs
+│
+├── test_*.py                        # Integration tests
+├── docker-compose.yml               # Local development
+├── IMPLEMENTATION_GUIDE.md          # Feature implementation guide
+├── package.json                     # Root workspace config
+└── README.md                        # This file
+```
+
+---
+
+## Core Concepts
+
+### Blocks
+
+The atomic unit of knowledge. Each block:
+- ✅ Is self-contained and meaningful
+- ✅ Has a unique URL (`/blocks/python-async-await`)
+- ✅ Can be embedded in multiple paths
+- ✅ Supports rich content (text, code, images, videos)
+- ✅ Has revision history
+- ✅ Can receive edit suggestions
+
+**Example Block:**
+
+```json
+{
+  "id": "uuid",
+  "slug": "python-async-await",
+  "title": "Python Async/Await Basics",
+  "content": { /* BlockNote JSON */ },
+  "tags": ["python", "async", "programming"],
+  "difficulty": "beginner",
+  "estimated_time_minutes": 15,
+  "created_by": "user-id",
+  "is_published": true
+}
+```
+
+### Paths
+
+An ordered collection of blocks forming a complete learning journey:
+- ✅ Has prerequisite requirements
+- ✅ Defines a logical learning sequence
+- ✅ Can be forked and customized
+- ✅ Tracks completion progress
+- ✅ Has difficulty and time estimates
+
+**Example Path:**
+
+```json
+{
+  "id": "uuid",
+  "slug": "learn-python-async",
+  "title": "Master Python Async Programming",
+  "description": "Complete guide to async/await in Python",
+  "blocks": [
+    {"block_id": "intro-to-async", "order": 0},
+    {"block_id": "python-async-await", "order": 1},
+    {"block_id": "asyncio-library", "order": 2}
+  ],
+  "difficulty": "intermediate",
+  "estimated_time_minutes": 120
+}
+```
+
+### Users & Roles
+
+**Permission Hierarchy:**
+
+1. **Guest** → Read public content
+2. **Builder** → Create blocks (pre-moderation required)
+3. **Trusted Builder** → Create blocks (auto-approved)
+4. **Moderator** → Approve content, manage flags
+5. **Admin** → Full system access, settings management
+
+**Progression:**
+- Earn **XP** through contributions
+- Unlock **badges** for achievements
+- Level up to gain more **permissions**
+
+---
+
+## AI-Assisted Content Creation
+
+### Overview
+
+AI agents serve as intelligent assistants that help builders create high-quality content faster while maintaining human oversight.
+
+### Agent Types
+
+| Type | Purpose | Capabilities |
+|------|---------|-------------|
+| **Content Creator** | Generate new blocks | Research topics, create drafts, find images |
+| **Content Researcher** | Find resources | Search web, discover related blocks |
+| **Content Editor** | Improve content | Enhance clarity, fix errors, optimize |
+| **Course Designer** | Build paths | Select blocks, order logically, fill gaps |
+
+### Workflow
+
+```
+1. Configure AI Agent
+   └─> Choose provider (OpenAI, Anthropic, custom)
+   └─> Set model parameters (temperature, max tokens)
+   └─> Enable MCP for context awareness
+
+2. Create Content Request
+   └─> Provide detailed prompt
+   └─> AI searches existing content (avoids duplication)
+   └─> AI performs web research (if enabled)
+
+3. Review AI Suggestions
+   └─> AI generates structured draft
+   └─> Includes sources and citations
+   └─> Provides confidence scores
+
+4. Human Approval
+   └─> Review for accuracy
+   └─> Make edits as needed
+   └─> Approve to publish
+
+5. Content Published
+   └─> Block/Path created
+   └─> Indexed for search
+   └─> XP awarded to builder
+```
+
+### Model Context Protocol (MCP)
+
+MCP enables AI agents to:
+- 🔍 **Search existing content** before creating new blocks
+- 📚 **Retrieve full context** of related blocks
+- 🔗 **Discover connections** between topics
+- 🎯 **Avoid duplication** by suggesting existing content
+
+**Available MCP Tools:**
+```python
+# Search existing blocks
+search_blocks(query="Python async", limit=10)
+
+# Get block details
+get_block_content(block_id="uuid")
+
+# Find related content
+discover_related(topic="async programming", max=5)
+
+# List paths by category
+list_paths(category="python")
+```
+
+### Configuration
+
+**Navigate to**: http://localhost:3000/ai-config
+
+**Create New Agent:**
+1. Click "Create AI Agent"
+2. Choose provider and model
+3. Set agent type and parameters
+4. Enable MCP and tools
+5. Set daily request limit
+6. Save configuration
+
+**Use Agent:**
+1. Go to AI Agents page
+2. Click "Use this agent" on any agent
+3. Enter your content prompt
+4. Wait for AI to process
+5. Review suggestions
+6. Approve to create content
+
+### Best Practices
+
+✅ **Be Specific**: Provide detailed prompts with context  
+✅ **Review Thoroughly**: Always verify accuracy  
+✅ **Check Sources**: Validate all citations  
+✅ **Use MCP**: Leverage existing content  
+✅ **Iterate**: Reject and refine until quality meets standards  
+✅ **Attribution**: Ensure proper attribution for sourced content  
+
+### Rate Limits
+
+- **Default**: 50 AI requests per day per agent
+- **Configurable**: Adjust per agent
+- **Admin Override**: Admins can set custom limits
+
+---
+
+## API Documentation
+
+### Base URL
+
+- **Development**: `http://localhost:8000`
+- **Production**: `https://api.notimetolie.com`
+
+### Authentication
+
+All protected endpoints require a Bearer token:
+
+```bash
+# Login
+curl -X POST http://localhost:8000/v1/users/login \
+  -H "Content-Type: application/x-www-form-urlencoded" \
+  -d "username=user@example.com&password=yourpassword"
+
+# Response
+{
+  "access_token": "eyJ...",
+  "token_type": "bearer"
+}
+
+# Use token in requests
+curl http://localhost:8000/v1/blocks \
+  -H "Authorization: Bearer eyJ..."
+```
+
+### Core Endpoints
+
+#### Blocks
+
+```bash
+# List all blocks
+GET /v1/blocks
+
+# Get specific block
+GET /v1/blocks/{slug}
+
+# Create block
+POST /v1/blocks
+{
+  "title": "New Block",
+  "content": { /* BlockNote JSON */ },
+  "tags": ["tag1", "tag2"]
+}
+
+# Update block
+PUT /v1/blocks/{id}
+
+# Delete block
+DELETE /v1/blocks/{id}
+
+# Mark as mastered
+POST /v1/blocks/{id}/master
+```
+
+#### Paths
+
+```bash
+# List all paths
+GET /v1/paths
+
+# Get specific path
+GET /v1/paths/{slug}
+
+# Create path
+POST /v1/paths
+{
+  "title": "New Path",
+  "description": "Learning journey",
+  "block_ids": ["block-1", "block-2"]
+}
+
+# Update path
+PUT /v1/paths/{id}
+
+# Delete path
+DELETE /v1/paths/{id}
+```
+
+#### AI Agents
+
+```bash
+# List AI configurations
+GET /v1/ai/configurations
+
+# Get specific config
+GET /v1/ai/configurations/{id}
+
+# Create configuration
+POST /v1/ai/configurations
+{
+  "name": "My Agent",
+  "provider": "openai",
+  "model_name": "gpt-4",
+  "agent_type": "content_creator"
+}
+
+# Update configuration
+PUT /v1/ai/configurations/{id}
+
+# Delete configuration
+DELETE /v1/ai/configurations/{id}
+
+# Create AI job
+POST /v1/ai/jobs
+{
+  "configuration_id": "config-id",
+  "job_type": "content_creator",
+  "input_prompt": "Create tutorial about..."
+}
+
+# Get job status
+GET /v1/ai/jobs/{job_id}
+
+# List job suggestions
+GET /v1/ai/jobs/{job_id}/suggestions
+
+# Approve suggestion
+POST /v1/ai/suggestions/{suggestion_id}/approve
+
+# Reject suggestion
+POST /v1/ai/suggestions/{suggestion_id}/reject
+```
+
+#### Search
+
+```bash
+# Search blocks and paths
+GET /v1/search?q=python async&limit=20
+
+# Advanced search with filters
+GET /v1/search?q=python&type=block&difficulty=beginner
+```
+
+### Interactive Documentation
+
+Visit **http://localhost:8000/docs** for:
+- 📖 Full API reference
+- 🧪 Interactive testing (Swagger UI)
+- 📝 Request/response schemas
+- 🔐 Authorization testing
+
+---
+
+## Development
+
+### Database Migrations
+
+When modifying models:
 
 ```bash
 cd apps/api
 source .venv/bin/activate
 
-# Create a new migration
-alembic revision --autogenerate -m "Description of changes"
+# Create migration
+alembic revision --autogenerate -m "Add new field"
 
-# Review the generated migration file in alembic/versions/
+# Review generated file
+# apps/api/alembic/versions/xxx_add_new_field.py
 
-# Apply migrations
+# Apply migration
 alembic upgrade head
 
-# Rollback last migration (if needed)
+# Rollback if needed
 alembic downgrade -1
 ```
 
-#### **Running Tests**
+### Code Quality
+
+**Backend (Python):**
 
 ```bash
-# Run all API tests
 cd apps/api
 source .venv/bin/activate
-pytest tests/ -v
 
-# Run specific test file
-pytest tests/test_blocks.py -v
+# Format code
+black src/
+
+# Sort imports
+isort src/
+
+# Type checking (if configured)
+mypy src/
+
+# Linting
+flake8 src/
+```
+
+**Frontend (TypeScript):**
+
+```bash
+cd apps/web
+
+# Lint
+npm run lint
+
+# Format
+npm run format
+
+# Type check
+npm run type-check
+```
+
+### Environment Variables
+
+**API** (`apps/api/.env`):
+
+```env
+# Database
+DATABASE_URL=sqlite:///./notimetolie.db
+
+# Security
+SECRET_KEY=your-secret-key-change-in-production
+ALGORITHM=HS256
+ACCESS_TOKEN_EXPIRE_MINUTES=10080
+
+# CORS
+CORS_ORIGINS=http://localhost:3000
+
+# Search
+MEILISEARCH_HOST=http://localhost:7700
+MEILISEARCH_KEY=masterKey
+
+# AI Providers (optional)
+OPENAI_API_KEY=sk-...
+ANTHROPIC_API_KEY=sk-ant-...
+```
+
+**Web** (`apps/web/.env.local`):
+
+```env
+# API URL
+NEXT_PUBLIC_API_URL=http://localhost:8000
+
+# Google OAuth (optional)
+NEXT_PUBLIC_GOOGLE_CLIENT_ID=123456789-abc.apps.googleusercontent.com
+```
+
+---
+
+## Testing
+
+### API Tests
+
+```bash
+cd apps/api
+source .venv/bin/activate
+
+# Run all tests
+pytest tests/ -v
 
 # Run with coverage
 pytest tests/ --cov=src --cov-report=html --cov-report=term
 
-# Run tests in parallel (faster)
+# Run specific test file
+pytest tests/test_blocks.py -v
+
+# Run in parallel (faster)
 pytest tests/ -n auto
-
-# Test summary:
-# ✅ 59 tests covering:
-#    - Authentication and RBAC
-#    - Blocks CRUD operations
-#    - Paths CRUD operations
-#    - Search functionality
-#    - Content serialization (BlockNote)
-#    - Event bus system
-#    - Database models
-
-# Web tests (to be implemented)
-cd apps/web
-npm test
 ```
 
-#### **Code Quality Checks**
+**Test Coverage:**
+- ✅ 59 tests covering:
+  - Authentication and RBAC
+  - Blocks CRUD operations
+  - Paths CRUD operations
+  - Search functionality
+  - Content serialization (BlockNote)
+  - Event bus system
+  - Database models
+
+### Integration Tests
 
 ```bash
-# Backend (Python)
-cd apps/api
-black src/           # Format code
-isort src/           # Sort imports
-mypy src/            # Type checking (if configured)
+# Test API endpoints
+./test_api.sh
 
-# Frontend (JavaScript/TypeScript)
-npm run lint         # ESLint
-npm run format       # Prettier
+# Test AI agent creation
+./test_agent_creation.py
+
+# Test all features
+./test_all_features.sh
+
+# Verify deployment readiness
+./verify_deployment.sh
 ```
 
-### **8.6. Current Application Structure**
+### Manual Testing Checklist
 
-The application is currently organized as follows:
+- [ ] User registration and login
+- [ ] Google OAuth flow
+- [ ] Create/edit/delete blocks
+- [ ] Create/edit/delete paths
+- [ ] Search functionality
+- [ ] AI agent configuration
+- [ ] AI content generation
+- [ ] Mark blocks as mastered
+- [ ] Admin settings page
+- [ ] OAuth testing interface
 
-*   **API (`apps/api/src/`):**
-    *   `main.py` - FastAPI app initialization and configuration
-    *   `config.py` - Environment-based configuration with Pydantic Settings
-    *   `routers/` - API endpoint handlers (blocks, paths, search)
-    *   `events/` - Event bus implementation for service communication
-    *   `models/` - SQLAlchemy database models
-    *   `services/` - Business logic and external service integrations
+---
 
-*   **Web (`apps/web/src/`):**
-    *   `app/` - Next.js 14 App Router pages
-    *   `components/` - Reusable React components
-    *   `types/` - TypeScript type definitions
-    *   Features: Navigation, Block Editor (BlockNote), Theme Toggle, Search
+## Deployment
 
-### **8.7. AI-Assisted Content Creation**
+### Production Checklist
 
-The platform includes a powerful AI agent system that helps builders create high-quality content using OpenAI-based APIs with Model Context Protocol (MCP) integration.
+**Backend:**
+- [ ] Set `DATABASE_URL` to PostgreSQL connection string
+- [ ] Generate strong `SECRET_KEY` (32+ characters)
+- [ ] Configure `CORS_ORIGINS` with production domain
+- [ ] Set up Redis for caching and queues
+- [ ] Deploy Meilisearch for search
+- [ ] Enable HTTPS/SSL
+- [ ] Set up monitoring (Prometheus, Grafana)
+- [ ] Configure error tracking (Sentry)
+- [ ] Set up backups (daily PostgreSQL dumps)
+- [ ] Review and set rate limits
+- [ ] Configure AI provider API keys
 
-#### **Overview**
+**Frontend:**
+- [ ] Set `NEXT_PUBLIC_API_URL` to production API
+- [ ] Configure Google OAuth redirect URIs
+- [ ] Enable analytics (Plausible, etc.)
+- [ ] Optimize images and assets
+- [ ] Enable CDN for static files
+- [ ] Set up logging
 
-AI agents serve as intelligent assistants that can:
-- Research topics by searching existing content and the web
-- Generate structured content drafts (Blocks and Paths)
-- Find and suggest relevant images or create image prompts
-- Ensure copyright compliance and factual accuracy
-- Provide context-aware suggestions using MCP to avoid duplication
-
-#### **Key Concepts**
-
-**Blocks vs. Paths:**
-- **Block**: The smallest atomic unit of knowledge - self-contained, meaningful, with unique URL. Examples: a tutorial step, a concept explanation, a code snippet with explanation.
-- **Path**: An ordered collection of Blocks forming a complete guide or learning journey. Think of it as a "course" or "complete tutorial" composed of multiple Blocks.
-
-**AI Agent Types:**
-- **Content Creator**: Generates new Blocks from user prompts, searches existing content first
-- **Content Researcher**: Finds relevant resources, existing Blocks, and web sources
-- **Content Editor**: Improves and refines existing content for clarity and accuracy
-- **Course Designer**: Creates structured Paths by selecting and ordering Blocks
-
-#### **How It Works**
-
-**1. Configuration**
-Navigate to `/ai-config` to create and manage AI agent configurations:
-- Choose AI provider (OpenAI, Anthropic, or custom API)
-- Select agent type and purpose
-- Configure model parameters (temperature, max tokens)
-- Enable MCP integration for context-aware assistance
-- Set up tool permissions (web search, block creation, content editing)
-
-**2. Content Creation Flow**
-
-When creating a Block or Path with AI assistance:
-
-```
-User Prompt → AI Agent → Search Existing Content (MCP) → 
-Generate Draft → Review & Suggest → User Approval → Published Content
-```
-
-**Example workflow for creating a Block:**
-1. User provides prompt: "Create a tutorial about Python async/await for beginners"
-2. AI searches existing Blocks via MCP to avoid duplication
-3. AI performs web search if enabled to gather current information
-4. AI generates structured Block template with:
-   - Clear title and slug
-   - Well-organized content (using BlockNote editor format)
-   - Relevant code examples
-   - Source URLs for verification
-   - Suggested tags
-5. User reviews the generated template
-6. User approves and publishes the Block
-
-**Example workflow for creating a Path:**
-1. User provides prompt: "Create a complete guide to learning React from scratch"
-2. AI searches existing Blocks related to React
-3. AI suggests existing Blocks that can be reused
-4. AI identifies gaps and suggests new Blocks to create
-5. AI proposes Path structure with ordered Block sequence
-6. User reviews, adjusts, and approves
-7. Path is created with selected/new Blocks
-
-**3. MCP Integration**
-
-The Model Context Protocol enables AI agents to:
-- **Search existing content**: Find relevant Blocks before creating new ones
-- **Retrieve full Block content**: Understand context and avoid duplication
-- **Discover related content**: Suggest connections between topics
-- **Access site metadata**: Understand content structure and categories
-
-**Available MCP Tools:**
-- `search_blocks(query, limit)` - Search existing knowledge blocks
-- `get_block_content(block_id)` - Retrieve full Block content
-- `discover_related(topic, max_results)` - Find related content
-- `list_paths(category)` - Browse existing learning paths
-
-**4. Copyright & Content Quality**
-
-AI agents are configured to:
-- ✅ Generate original content or properly attribute sources
-- ✅ Provide source URLs for factual claims
-- ✅ Suggest image URLs from licensed sources or generate image prompts
-- ✅ Flag content requiring expert review
-- ✅ Include confidence scores and rationale for suggestions
-
-⚠️ **Human Review Required**: All AI-generated content must be reviewed and approved by a Builder before publication. AI is an assistant, not a replacement for human judgment.
-
-#### **API Endpoints**
-
-**AI Configuration:**
-- `POST /v1/ai/configurations` - Create AI agent configuration
-- `GET /v1/ai/configurations` - List your AI agents
-- `PUT /v1/ai/configurations/{id}` - Update configuration
-- `DELETE /v1/ai/configurations/{id}` - Delete agent
-
-**AI Jobs:**
-- `POST /v1/ai/jobs` - Create new AI content generation job
-- `GET /v1/ai/jobs/{id}` - Get job status and results
-- `POST /v1/ai/jobs/{id}/cancel` - Cancel running job
-- `GET /v1/ai/jobs/{id}/suggestions` - List AI-generated suggestions
-
-**Suggestion Management:**
-- `POST /v1/ai/suggestions/{id}/approve` - Approve and create Block
-- `POST /v1/ai/suggestions/{id}/reject` - Reject with feedback
-
-#### **Permissions**
-
-Required permissions for AI features:
-- `use_ai_agents` - Access AI configuration and job creation
-- `create_blocks` - Approve AI suggestions and create Blocks
-- `create_paths` - Create Paths from AI suggestions
-
-#### **Usage Example**
+### Docker Production Deployment
 
 ```bash
-# 1. Create AI configuration
-curl -X POST http://localhost:8000/v1/ai/configurations \
-  -H "Authorization: Bearer $TOKEN" \
-  -H "Content-Type: application/json" \
-  -d '{
-    "name": "Content Creator Pro",
-    "provider": "openai",
-    "agent_type": "content_creator",
-    "model_name": "gpt-4",
-    "temperature": 0.7,
-    "mcp_enabled": true,
-    "can_search_web": true
-  }'
+# Build production images
+docker-compose -f docker-compose.prod.yml build
 
-# 2. Start AI job
-curl -X POST http://localhost:8000/v1/ai/jobs \
-  -H "Authorization: Bearer $TOKEN" \
-  -H "Content-Type: application/json" \
-  -d '{
-    "configuration_id": "config-uuid",
-    "job_type": "content_creator",
-    "input_prompt": "Create a beginner tutorial about Python async/await"
-  }'
+# Start services
+docker-compose -f docker-compose.prod.yml up -d
 
-# 3. Check job status
-curl http://localhost:8000/v1/ai/jobs/{job_id} \
-  -H "Authorization: Bearer $TOKEN"
+# View logs
+docker-compose -f docker-compose.prod.yml logs -f
 
-# 4. Review suggestions
-curl http://localhost:8000/v1/ai/jobs/{job_id}/suggestions \
-  -H "Authorization: Bearer $TOKEN"
-
-# 5. Approve suggestion
-curl -X POST http://localhost:8000/v1/ai/suggestions/{suggestion_id}/approve \
-  -H "Authorization: Bearer $TOKEN"
+# Health check
+curl https://api.notimetolie.com/v1/health
 ```
 
-#### **Best Practices**
+### Environment Configuration
 
-1. **Be Specific**: Provide detailed prompts with context and requirements
-2. **Review Thoroughly**: Always review AI-generated content for accuracy
-3. **Check Sources**: Verify all source URLs and citations
-4. **Use MCP**: Enable MCP integration to leverage existing content
-5. **Iterate**: Reject and refine suggestions until quality meets standards
-6. **Attribution**: Ensure proper attribution for sourced content
+**Production `.env` example:**
 
-#### **Security & Rate Limits**
+```env
+# Database (PostgreSQL)
+DATABASE_URL=postgresql://user:pass@localhost:5432/notimetolie
 
-- API keys are encrypted at rest
-- Daily request limits per configuration (default: 50 requests/day)
-- All AI operations are logged for audit
-- AI cannot publish content without user approval
-- Rate limiting prevents abuse and controls costs
+# Security (CRITICAL: Change these!)
+SECRET_KEY=<generate-strong-random-key>
+ALGORITHM=HS256
+ACCESS_TOKEN_EXPIRE_MINUTES=10080
 
-## **9. Operational Requirements & SLA**
+# CORS
+CORS_ORIGINS=https://notimetolie.com,https://www.notimetolie.com
 
-*   **Service Level Agreement (SLA):** A 99.9% uptime guarantee for the embedding service will be offered to all B2B customers on paid plans.
-*   **Backup & Recovery:** Daily automated backups of the PostgreSQL database, stored in a separate, geo-redundant location. Disaster recovery drills will be conducted quarterly.
-*   **Security:** Adherence to OWASP Top 10 best practices, mandatory security code reviews, regular dependency scanning, and annual third-party penetration testing.
+# Search
+MEILISEARCH_HOST=http://meilisearch:7700
+MEILISEARCH_KEY=<production-master-key>
 
-## **10. Why Build From Scratch? A Strategic Analysis**
+# Redis
+REDIS_URL=redis://redis:6379/0
 
-A common question is why not leverage existing open-source platforms like wikis or headless CMSs. The answer lies in the unique synthesis of our requirements, which no single platform provides out-of-the-box.
+# AI Providers
+OPENAI_API_KEY=sk-...
+ANTHROPIC_API_KEY=sk-ant-...
 
-| Feature | Traditional Wiki (e.g., MediaWiki) | Headless CMS (e.g., Strapi) | No Time To Lie (Our Solution) |
-| :--- | :--- | :--- | :--- |
-| **Content Unit** | Monolithic Page | Flexible Data Models | **Atomic, Reusable Blocks** |
-| **Structure** | Unstructured (Hyperlinks) | Unstructured (API-driven) | **Structured, Hierarchical Paths** |
-| **Delivery Model** | Destination Website | Headless API | **Embeddable Content-as-a-Service** |
-| **Quality Control** | Post-moderation | Admin-driven | **Pre-moderation & Community Review** |
-| **Core Philosophy** | Encyclopedia | Content Repository | **Living Knowledge Playbooks** |
+# Monitoring
+SENTRY_DSN=https://...@sentry.io/...
+```
 
-Attempting to force a wiki to be a CaaS platform or a headless CMS to have a wiki-style contribution model would result in a fragile, unmaintainable system. **Building from scratch is a strategic decision** to create a purpose-built, highly optimized platform that can deliver on our unique value proposition without compromise.
+---
 
-## **11. Appendix: Core API Endpoints**
+## Contributing
 
-*   `POST /v1/blocks`: Create a new Block.
-*   `GET /v1/blocks/{slug}`: Retrieve a public Block.
-*   `POST /v1/blocks/{id}/suggestions`: Submit an Edit Suggestion for a Block.
-*   `POST /v1/paths`: Create a new Path with an ordered list of Block IDs.
-*   `GET /v1/paths/{slug}`: Retrieve a full Path with its Blocks.
-*   `GET /v1/search?q={query}`: Perform a search across content.
-*   `GET /v1/embed/{node_type}/{id}`: The endpoint for the embedding service.
+### Development Workflow
+
+1. **Fork & Clone**
+   ```bash
+   git clone https://github.com/yourusername/notimetolie.com.git
+   cd notimetolie.com
+   ```
+
+2. **Create Feature Branch**
+   ```bash
+   git checkout -b feature/your-feature-name
+   ```
+
+3. **Make Changes**
+   - Write clean, documented code
+   - Follow existing conventions
+   - Add tests for new features
+
+4. **Test**
+   ```bash
+   # Backend tests
+   cd apps/api && pytest tests/
+   
+   # Frontend checks
+   cd apps/web && npm run lint
+   ```
+
+5. **Commit**
+   ```bash
+   git add -A
+   git commit -m "feat: add new feature description"
+   ```
+
+6. **Push & Pull Request**
+   ```bash
+   git push origin feature/your-feature-name
+   ```
+
+### Commit Message Convention
+
+Follow [Conventional Commits](https://www.conventionalcommits.org/):
+
+```
+feat: add AI agent configuration page
+fix: resolve block editor save issue
+docs: update API documentation
+style: format code with black
+refactor: simplify auth logic
+test: add tests for path creation
+chore: update dependencies
+```
+
+### Code Style
+
+**Python:**
+- Follow PEP 8
+- Use type hints
+- Format with Black
+- Sort imports with isort
+- Max line length: 100
+
+**TypeScript:**
+- Use TypeScript strict mode
+- Prefer functional components
+- Use Tailwind CSS for styling
+- Format with Prettier
+- Follow ESLint rules
+
+---
+
+## License
+
+**Proprietary License**
+
+Copyright (c) 2025 No Time To Lie
+
+All rights reserved. This software and associated documentation files (the "Software") may not be used, copied, modified, merged, published, distributed, sublicensed, and/or sold without explicit permission from the copyright holder.
+
+---
+
+## Support & Contact
+
+- **Website**: https://notimetolie.com
+- **Documentation**: https://docs.notimetolie.com
+- **API Status**: https://status.notimetolie.com
+- **Email**: support@notimetolie.com
+- **GitHub Issues**: [Report a bug](https://github.com/yourusername/notimetolie.com/issues)
+
+---
+
+## Acknowledgments
+
+Built with:
+- [FastAPI](https://fastapi.tiangolo.com/) - Modern Python web framework
+- [Next.js](https://nextjs.org/) - React framework
+- [BlockNote](https://www.blocknotejs.org/) - Rich text editor
+- [Meilisearch](https://www.meilisearch.com/) - Search engine
+- [shadcn/ui](https://ui.shadcn.com/) - Component library
+- [Tailwind CSS](https://tailwindcss.com/) - CSS framework
+
+---
+
+**Made with ❤️ by the No Time To Lie team**
