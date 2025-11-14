@@ -10,6 +10,7 @@ import { Button } from '@/components/ui/button'
 import { AIConfigForm } from '@/components/AIConfigForm'
 import { useAIJobUpdates } from '@/hooks/useWebSocket'
 import { PageHeader } from '@/components/PageHeader'
+import { api } from '@/lib/api'
 
 interface AIConfig {
   id: string
@@ -120,14 +121,11 @@ export default function AIConfigPage() {
   const loadConfigurations = async () => {
     try {
       setIsLoading(true)
-      const response = await fetch('/api/v1/ai/configurations', {
-        headers: {
-          'Authorization': `Bearer ${localStorage.getItem('auth_token')}`,
-        },
-      })
-      if (response.ok) {
-        const data = await response.json()
-        setConfigs(data)
+      const response = await api.listAIConfigurations()
+      if (response.data) {
+        setConfigs(response.data)
+      } else if (response.error) {
+        console.error('Failed to load AI configurations:', response.error)
       }
     } catch (error) {
       console.error('Failed to load AI configurations:', error)
@@ -154,7 +152,7 @@ export default function AIConfigPage() {
     const labels = {
       openai: 'OpenAI',
       anthropic: 'Anthropic',
-      custom: 'Custom',
+      openai_compatible: 'OpenAI Compatible',
     }
     return labels[provider as keyof typeof labels] || provider
   }
@@ -389,20 +387,12 @@ export default function AIConfigPage() {
               <AIConfigForm
                 onSubmit={async (data) => {
                   try {
-                    const response = await fetch('/api/v1/ai/configurations', {
-                      method: 'POST',
-                      headers: {
-                        'Content-Type': 'application/json',
-                        'Authorization': `Bearer ${localStorage.getItem('auth_token')}`,
-                      },
-                      body: JSON.stringify(data),
-                    })
-                    if (response.ok) {
+                    const response = await api.createAIConfiguration(data)
+                    if (response.data) {
                       setShowCreateForm(false)
                       loadConfigurations()
                     } else {
-                      const error = await response.json()
-                      alert(`Error: ${error.detail || 'Failed to create agent'}`)
+                      alert(`Error: ${response.error || 'Failed to create agent'}`)
                     }
                   } catch (error) {
                     console.error('Failed to create agent:', error)
