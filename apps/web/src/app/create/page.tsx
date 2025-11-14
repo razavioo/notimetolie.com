@@ -38,7 +38,9 @@ export default function AICreatePage() {
         loadSuggestions(currentJob.id)
         setStep('review')
       } else if (update.status === 'failed') {
-        setError(update.data?.error || 'AI job failed')
+        const errorDetail = update.data?.error || 'Unknown error occurred'
+        const errorMessage = `AI generation failed: ${errorDetail}. This could be due to:\n• Invalid API key\n• Insufficient API credits\n• Model unavailability\n• Rate limiting\n\nPlease check your AI agent configuration and try again.`
+        setError(errorMessage)
         setStep('prompt')
       }
     } else if (update.type === 'ai_job_progress') {
@@ -86,16 +88,41 @@ export default function AICreatePage() {
 
     const agentType = contentType === 'block' ? 'content_creator' : 'course_designer'
     
-    const { data, error } = await api.createAIJob({
-      configuration_id: selectedConfig,
-      job_type: agentType,
-      input_prompt: prompt,
-    })
+    try {
+      const { data, error } = await api.createAIJob({
+        configuration_id: selectedConfig,
+        job_type: agentType,
+        input_prompt: prompt,
+      })
 
-    if (data) {
-      setCurrentJob(data)
-    } else {
-      setError(error || 'Failed to start AI job')
+      if (data) {
+        setCurrentJob(data)
+      } else {
+        // Provide detailed error message
+        let errorMessage = 'Failed to start AI job'
+        if (error) {
+          if (error.includes('401') || error.includes('Unauthorized')) {
+            errorMessage = 'Authentication failed. Please sign in again.'
+          } else if (error.includes('403') || error.includes('Forbidden')) {
+            errorMessage = 'You do not have permission to use AI agents. Please check your account permissions.'
+          } else if (error.includes('404')) {
+            errorMessage = 'AI agent configuration not found. Please select a valid agent.'
+          } else if (error.includes('429') || error.includes('rate limit')) {
+            errorMessage = 'Rate limit exceeded. Please try again later.'
+          } else if (error.includes('500')) {
+            errorMessage = 'Server error occurred. Please try again in a few moments.'
+          } else if (error.includes('network') || error.includes('fetch')) {
+            errorMessage = 'Network connection failed. Please check your internet connection and try again.'
+          } else {
+            errorMessage = `Error: ${error}`
+          }
+        }
+        setError(errorMessage)
+        setStep('prompt')
+      }
+    } catch (err: any) {
+      console.error('AI job creation error:', err)
+      setError(`Unexpected error: ${err.message || 'Please check your connection and try again.'}`)
       setStep('prompt')
     }
   }
@@ -278,12 +305,12 @@ export default function AICreatePage() {
             </CardHeader>
             <CardContent className="space-y-4">
               {error && (
-                <div className="p-4 bg-destructive/10 border border-destructive/20 text-destructive rounded-md flex items-start gap-2">
-                  <AlertCircle className="h-5 w-5 flex-shrink-0 mt-0.5" />
-                  <div>
+                <div className="p-4 bg-destructive/10 border border-destructive/20 text-destructive rounded-md">
+                  <div className="flex items-start gap-2 mb-2">
+                    <AlertCircle className="h-5 w-5 flex-shrink-0 mt-0.5" />
                     <p className="font-medium">Error</p>
-                    <p className="text-sm">{error}</p>
                   </div>
+                  <p className="text-sm whitespace-pre-line ml-7">{error}</p>
                 </div>
               )}
 

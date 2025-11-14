@@ -161,6 +161,7 @@ const navigation = [
   { name: 'Blocks', href: '/blocks', roles: ['*'] },
   { name: 'Paths', href: '/paths', roles: ['*'] },
   { name: 'Create with AI', href: '/create', roles: ['builder', 'trusted_builder', 'moderator', 'admin'], permission: 'use_ai_agents' },
+  { name: 'AI Jobs', href: '/ai-jobs', roles: ['builder', 'trusted_builder', 'moderator', 'admin'], permission: 'use_ai_agents' },
   { name: 'Search', href: '/search', roles: ['*'] },
   { name: 'Developers', href: '/developers', roles: ['*'] },
 ]
