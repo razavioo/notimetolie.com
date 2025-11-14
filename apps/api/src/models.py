@@ -244,6 +244,8 @@ class User(Base):
     created_revisions = relationship("Revision")
     created_suggestions = relationship("EditSuggestion", foreign_keys=[EditSuggestion.created_by_id])
     reviewed_suggestions = relationship("EditSuggestion", foreign_keys=[EditSuggestion.reviewed_by_id])
+    ai_configurations = relationship("AIConfiguration", back_populates="user")
+    ai_jobs = relationship("AIJob", back_populates="user")
 
     def __init__(self, **kwargs):
         if "metadata" in kwargs:
@@ -260,62 +262,6 @@ class User(Base):
         if name == "metadata":
             name = "meta_json"
         super().__setattr__(name, value)
-
-    def set_blocknote_content(self, blocks: list) -> None:
-        """Set content from BlockNote blocks"""
-        if blocks:
-            self.content = ContentSerializer.serialize_blocknote_content(blocks)
-        else:
-            self.content = None
-    
-    def get_blocknote_content(self) -> BlockNoteContent:
-        """Get content as BlockNoteContent object"""
-        if not self.content:
-            return BlockNoteContent([])
-        
-        return ContentSerializer.deserialize_blocknote_content(self.content)
-    
-    def get_blocknote_blocks(self) -> list:
-        """Get BlockNote blocks for editing"""
-        if not self.content:
-            return []
-        
-        blocknote_content = self.get_blocknote_content()
-        return blocknote_content.blocks
-    
-    def get_plain_text(self) -> str:
-        """Extract plain text for search and display"""
-        if not self.content:
-            return ""
-        
-        try:
-            # Check if content is in BlockNote format
-            if ContentSerializer.is_blocknote_content(self.content):
-                blocks = self.get_blocknote_blocks()
-                return ContentSerializer.extract_text_content(blocks)
-            else:
-                # Legacy content
-                return self.content or ""
-        except Exception:
-            # Fallback to raw content
-            return self.content or ""
-    
-    def to_html(self) -> str:
-        """Convert content to HTML for embedding"""
-        if not self.content:
-            return ""
-        
-        try:
-            # Check if content is in BlockNote format
-            if ContentSerializer.is_blocknote_content(self.content):
-                blocknote_content = self.get_blocknote_content()
-                return blocknote_content.to_html()
-            else:
-                # Legacy content - basic HTML escaping
-                import html
-                return f"<p>{html.escape(self.content)}</p>"
-        except Exception:
-            return "<p>Content unavailable</p>"
 
 
 class FlagSeverity(PyEnum):
