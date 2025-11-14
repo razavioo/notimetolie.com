@@ -60,7 +60,12 @@ export default function CreatePathPage() {
     e.preventDefault()
     
     if (selectedBlocks.length === 0) {
-      alert('Please select at least one block for the path')
+      alert('Please select at least two blocks to create a learning path')
+      return
+    }
+
+    if (selectedBlocks.length === 1) {
+      alert('A learning path needs at least 2 blocks. Please add one more block to create a journey.')
       return
     }
 
@@ -242,6 +247,13 @@ export default function CreatePathPage() {
                 <div className="text-center py-12 text-muted-foreground">
                   <p className="mb-2">No blocks selected yet</p>
                   <p className="text-sm">Click on blocks from the left to add them</p>
+                  <p className="text-xs mt-2 text-primary">Minimum 2 blocks required for a path</p>
+                </div>
+              ) : selectedBlocks.length === 1 ? (
+                <div className="mb-4 p-3 bg-yellow-50 dark:bg-yellow-900/20 border border-yellow-200 dark:border-yellow-800 rounded-md">
+                  <p className="text-sm text-yellow-800 dark:text-yellow-200">
+                    ⚠️ Add at least 1 more block to create a learning path
+                  </p>
                 </div>
               ) : (
                 <DragDropContext onDragEnd={handleDragEnd}>
@@ -300,10 +312,10 @@ export default function CreatePathPage() {
             </button>
             <button
               type="submit"
-              disabled={isSaving || selectedBlocks.length === 0}
+              disabled={isSaving || selectedBlocks.length < 2}
               className="px-6 py-2 bg-primary text-primary-foreground rounded-md hover:bg-primary/90 disabled:opacity-50 disabled:cursor-not-allowed transition-colors"
             >
-              {isSaving ? 'Creating...' : 'Create Path'}
+              {isSaving ? 'Creating...' : selectedBlocks.length === 1 ? 'Add 1 More Block' : 'Create Path'}
             </button>
           </div>
         </form>

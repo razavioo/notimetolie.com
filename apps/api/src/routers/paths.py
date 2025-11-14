@@ -275,6 +275,13 @@ async def create_path(
     db: AsyncSession = Depends(get_db)
 ):
     """Create a new path (public endpoint for testing - auth to be added later)"""
+    # Validate minimum blocks requirement
+    if len(path_data.block_ids) < 2:
+        raise HTTPException(
+            status_code=status.HTTP_400_BAD_REQUEST,
+            detail="A learning path must contain at least 2 blocks to create a journey"
+        )
+    
     # Check if slug already exists
     result = await db.execute(
         select(ContentNode).where(ContentNode.slug == path_data.slug)
