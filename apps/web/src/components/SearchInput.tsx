@@ -50,7 +50,7 @@ export function SearchInput({
             onFocus={() => setIsFocused(true)}
             onBlur={() => setIsFocused(false)}
             placeholder={placeholder}
-            className="pl-10 pr-10"
+            className="pl-[42px] pr-10"
           />
           {value && (
             <button
